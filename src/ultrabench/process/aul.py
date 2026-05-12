@@ -82,13 +82,11 @@ CLASS_TO_LABEL = {
 }
 DATASET_INFO = DatasetInfo(
     description=(
-        "A dataset of liver ultrasound images with labeled "
-        "masses (normal, benign, and malignant) and "
-        "pixel-level annotations for the scan, liver, and mass "
-        "regions."
+        "A dataset of liver ultrasound images for liver and mass "
+        "segmentation, and liver mass classification."
     ),
     citation="""
-    @dataset{aul_yiming2022,
+    @dataset{yiming2022_aul,
         author       = {Xu Yiming and
                         Zheng Bowen and
                         Liu Xiaohong and
