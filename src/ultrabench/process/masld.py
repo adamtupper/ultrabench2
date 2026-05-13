@@ -89,6 +89,7 @@ DATASET_INFO = DatasetInfo(
     license="cc-by-4.0",
     features=Features(
         {
+            "filename": Value("string"),
             "patient": Value("int32"),
             "frame": Value("int32"),
             "image": Image(),
@@ -246,6 +247,9 @@ def process_masld(
                 )
             else:
                 train_records.append(record)
+
+    print(train_records[0].keys())
+    print(test_records[0].keys())
 
     dataset = DatasetDict(
         {
