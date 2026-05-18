@@ -1,239 +1,330 @@
-"""Split the BUSBRA dataset into training, validation, and test sets using a 7:1:2 split.
-The dataset consists of breast ultrasound images with benign and malignant tumors.
+"""Prepare the training and test sets for the BUS-BRA dataset.
 
-They use one image from each patient leading to 1,064 images, with 722 images containing 
-benign tumors and 342 images containing malignant tumors. And then 2-class pathology classification.
+The dataset is split by patient into training and test data (80:20)
+to ensure there is no patient overlap between the splits.
 
-Each example (a single image) is represented as an object in one of three JSON array
-files (`train.json`, `validation.json`, or `test.json`). Each object has the following
-key/value pairs:
+The resulting dataset has three splits:
 
-    - image: The path to the image file.
-    - mask: The path to the tumor segmentation mask file.
-    - pathology: The pathology of the tumor (benign or malignant).
-    - label: The pathology encoded as an integer (benign = 0, malignant = 1).
-    - patient_id: The unique patient identifier.
+    - train: 80% of patients, original-size images.
+    - test: 20% of patients, original-size images.
+    - test.{size}: same examples as test, resized so the longest edge measures
+      {size} px and then zero-padded to {size} x {size} px.
+
+Each example has the following features:
+
+    - filename: Original filename without the file extension.
+    - patient: Zero-padded 4-digit patient case number.
+    - side: The breast that was imaged ("left" or "right").
+    - histology: Histopathology of the breast lesion (text).
+    - histology_label: ClassLabel for the 8 most common histologies plus
+      "other" (9 classes total).
+    - pathology: ClassLabel for the pathology (benign or malignant).
+    - birads: BI-RADS assessment score.
+    - device: Ultrasound device used.
+    - image: 3-channel ultrasound image.
+    - tumor_mask: Single-channel binary tumor mask.
+
+Three ground-truth CSV files are also created for the test split
+for use by the evaluation layer:
+
+    - ground_truth_classification_pathology.csv
+    - ground_truth_classification_histology.csv
+    - ground_truth_segmentation.csv
 
 Usage:
-    python busbra.py RAW_DATA_DIR OUTPUT_DIR
+
+    ultrabench process busbra RAW_DATA_DIR OUTPUT_DIR
 """
 
-import glob
-import json
 import os
-import sys
-from pathlib import Path
 from importlib.metadata import version
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import skimage
 import skimage.io as io
-from sklearn.model_selection import train_test_split
-from tqdm import tqdm
+import typer
+from datasets import (
+    ClassLabel,
+    Dataset,
+    DatasetDict,
+    DatasetInfo,
+    Features,
+    Image,
+    Value,
+)
+from huggingface_hub import CommitOperationAdd, HfApi
+from sklearn.model_selection import GroupShuffleSplit
+from tqdm.auto import tqdm
+from typing_extensions import Annotated
 
-__version__ = "1.1.0"  # Manually update version (from 1.0.0) to reflect addition of masks
-# __version__ = version("ultrabench")
+from .utils import (
+    generate_classification_ground_truth_from_records,
+    generate_segmentation_ground_truth_from_records,
+    resize_and_pad,
+    save_version_info,
+    to_3_channel,
+)
 
-OUTPUT_NAME = "busbra_v{}"
-CLASS_TO_LABEL = {
-    "benign": 0,
-    "malignant": 1,
-}
+__version__ = version("ultrabench")
 
-def collect_examples(dataset_dir):
-    """Collect examples from the BUSBRA dataset."""
-    images_dir = os.path.join(dataset_dir, 'Images')
-    masks_dir = os.path.join(dataset_dir, 'Masks')
-    csv_path = os.path.join(dataset_dir, 'bus_data.csv')
-    
-    if not os.path.exists(images_dir):
-        raise FileNotFoundError(f"Images directory not found: {images_dir}")
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"CSV file not found: {csv_path}")
-    
-    # Load metadata
-    busbra_data = pd.read_csv(csv_path)
-    
-    # Get one image per patient for consistency with the paper
-    busbra_data_oneperpat = busbra_data.drop_duplicates(subset=['Case'])
-    
-    # Get available image files
-    files = [f for f in os.listdir(images_dir) if f.endswith('.png')]
-    files_oneperpat = [f for f in files if f.replace('.png', '') in busbra_data_oneperpat['ID'].values]
-    
-    # Create mapping from file ID to pathology
-    file_to_label = dict(zip(busbra_data['ID'], busbra_data['Pathology']))
-    
-    examples = []
-    for image_file in files_oneperpat:
-        image_id = image_file.replace('.png', '')
-        if image_id not in file_to_label:
-            continue
-            
-        pathology = file_to_label[image_id]
-        if pathology not in CLASS_TO_LABEL:
-            continue
-            
-        image_path = os.path.join(images_dir, image_file)
-        mask_path = os.path.join(masks_dir, image_file.replace('bus', 'mask'))
-        
-        # Check if mask exists
-        has_mask = os.path.exists(mask_path)
-        
-        # Extract patient ID from the image filename or use image_id
-        patient_id = image_id.split('-')[0] if '-' in image_id else image_id
-        
-        example = {
-            "filename": image_id,
-            "image_path": image_path,
-            "mask_path": mask_path if has_mask else None,
-            "pathology": pathology,
-            "label": CLASS_TO_LABEL[pathology],
-            "patient_id": patient_id,
-            "image": f"images/{image_id}.png",
-            "mask": f"masks/{image_id}.png" if has_mask else None,
+OUTPUT_NAME = "UltraBench/BUS-BRA"
+
+KNOWN_HISTOLOGIES = [
+    "fibroadenoma",
+    "invasive ductal carcinoma",
+    "cyst",
+    "fibrocystic changes",
+    "invasive lobular carcinoma",
+    "intraductal papilloma",
+    "sclerosing adenosis",
+    "hyperplasia",
+]
+
+DATASET_INFO = DatasetInfo(
+    description=(
+        "A dataset of breast ultrasound images for breast tumor "
+        "segmentation and classification."
+    ),
+    citation="""
+    @article{gomezflores2024_busbra,
+        author = {Gómez-Flores, Wilfrido and
+                  Gregorio-Calas, Miguel J. and
+                  Coelho de Albuquerque Pereira, Wagner},
+        title = {BUS-BRA: A breast ultrasound dataset for assessing
+                 computer-aided diagnosis systems},
+        journal = {Medical Physics},
+        volume = {51},
+        pages = {3110--3123},
+        year = {2024},
+        doi = {10.1002/mp.16812},
+    }
+    """,
+    homepage="https://zenodo.org/records/8231412",
+    license="cc-by-4.0",
+    features=Features(
+        {
+            "filename": Value("string"),
+            "patient": Value("string"),
+            "side": Value("string"),
+            "histology": Value("string"),
+            "histology_label": ClassLabel(names=KNOWN_HISTOLOGIES + ["other"]),
+            "pathology": ClassLabel(names=["benign", "malignant"]),
+            "birads": Value("int32"),
+            "device": Value("string"),
+            "image": Image(),
+            "tumor_mask": Image(),
         }
-        
-        examples.append(example)
-    
-    return examples
-
-def copy_images(output_dir, df):
-    """Save the images as PNG files in the output directory. 3-channel images are
-    converted to single-channel images by using the mean intensity across the three
-    channels.
-    """
-    image_dir = os.path.join(output_dir, "images")
-    os.makedirs(image_dir, exist_ok=True)
-    
-    for _, example in tqdm(df.iterrows(), total=len(df), desc="Processing images"):
-        source_path = example["image_path"]
-        dest_filename = f"{example['filename']}.png"
-        dest_path = os.path.join(image_dir, dest_filename)
-        
-        image = io.imread(source_path)
-        if image.ndim == 3:
-            image = image.mean(axis=-1).astype("uint8")
-
-        io.imsave(dest_path, image, check_contrast=False)
+    ),
+)
 
 
-def generate_masks(output_dir, df):
-    """Generate and save the tumor segmentation masks for the examples.
-    
+def collect_metadata(dataset_dir: str) -> pd.DataFrame:
+    """Load and prepare the metadata for all images in the dataset.
+
     Args:
-        output_dir: The path to the output directory.
-        df: The DataFrame containing the examples.
+        dataset_dir: The path to the raw BUS-BRA dataset directory.
+
+    Returns:
+        A DataFrame with one row per image containing preprocessed metadata
+        fields.
+
+    Raises:
+        FileNotFoundError: If the metadata CSV is not found.
     """
-    mask_dir = os.path.join(output_dir, "masks")
-    os.makedirs(mask_dir, exist_ok=True)
-    
-    for _, example in tqdm(df.iterrows(), total=len(df), desc="Processing masks"):
-        if example["mask_path"] and os.path.exists(example["mask_path"]):
-            # Read the mask
-            mask = io.imread(example["mask_path"])
-            
-            # Convert to binary mask if needed
-            if mask.ndim == 3:
-                mask = mask.mean(axis=-1).astype("uint8")
-            
-            # Ensure binary values (0 or 1)
-            mask = (mask > 0).astype("uint8")
-            
-            # Save the mask
-            mask_filename = f"{example['filename']}.png"
-            mask_path = os.path.join(mask_dir, mask_filename)
-            io.imsave(mask_path, mask, check_contrast=False)
+    csv_path = os.path.join(dataset_dir, "bus_data.csv")
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Metadata CSV not found: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+
+    df["filename"] = df["ID"]
+    df["patient"] = df["Case"].apply(lambda x: f"{x:04d}")
+    df["side"] = df["Side"].str.lower()
+    df["histology"] = df["Histology"]
+    df["histology_label"] = df["Histology"].apply(
+        lambda x: KNOWN_HISTOLOGIES.index(x) if x in KNOWN_HISTOLOGIES else 8
+    )
+    df["pathology"] = df["Pathology"].apply(lambda x: 0 if x == "benign" else 1)
+    df["birads"] = df["BIRADS"].astype(np.int32)
+    df["device"] = df["Device"]
+
+    return df[
+        [
+            "filename",
+            "patient",
+            "side",
+            "histology",
+            "histology_label",
+            "pathology",
+            "birads",
+            "device",
+        ]
+    ]
 
 
-def save_examples(output_dir, df, split):
-    """Save the examples to a JSON file."""
-    columns_to_drop = ["filename", "image_path", "mask_path"]
-    df_clean = df.drop(columns=columns_to_drop)
-    examples = df_clean.to_dict(orient="records")
-    
-    with open(os.path.join(output_dir, f"{split}.json"), "w") as f:
-        json.dump(examples, f, indent=4)
+def process_examples(
+    dataset_dir: str, df: pd.DataFrame, size: int | None = None
+) -> list[dict]:
+    """Process a subset of examples into record dicts.
 
-def save_version_info(output_dir, version):
-    """Save version information."""
-    version_info = {"version": version}
-    with open(os.path.join(output_dir, "version.json"), "w") as f:
-        json.dump(version_info, f, indent=4)
+    Args:
+        dataset_dir: The path to the raw BUS-BRA dataset directory.
+        df: DataFrame of examples to process (from collect_metadata).
+        size: If provided, resize and pad images and masks to size x size
+            pixels.
 
-def verify_args(raw_data_dir, output_dir):
-    """Verify input arguments."""
-    assert os.path.isdir(raw_data_dir), f"raw_data_dir must be an existing directory: {raw_data_dir}"
-    assert os.path.isdir(output_dir), f"output_dir must be an existing directory: {output_dir}"
-    
-    dataset_output_dir = os.path.join(output_dir, OUTPUT_NAME.format(__version__))
-    if os.path.exists(dataset_output_dir):
-        print(f"Warning: Output directory {dataset_output_dir} already exists. Files may be overwritten.")
+    Returns:
+        A list of example dictionaries with numpy array values for image and
+        tumor_mask fields.
+    """
+    images_dir = os.path.join(dataset_dir, "Images")
+    masks_dir = os.path.join(dataset_dir, "Masks")
 
-def busbra(raw_data_dir: str, output_dir: str):
-    """Prepare the training, validation, and test sets for the BUSBRA classification task."""
-    # Verify arguments
+    records = []
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing examples"):
+        filename = row["filename"]
+        image_path = os.path.join(images_dir, f"{filename}.png")
+        mask_path = os.path.join(masks_dir, f"mask_{filename.removeprefix('bus_')}.png")
+
+        raw_image = io.imread(image_path)
+        image = to_3_channel(raw_image)
+        tumor_mask = io.imread(mask_path).astype(np.uint8)
+
+        if size is not None:
+            image = resize_and_pad(image, size, order=1)
+            tumor_mask = resize_and_pad(tumor_mask, size, order=0)
+
+        records.append(
+            {
+                "filename": filename,
+                "patient": row["patient"],
+                "side": row["side"],
+                "histology": row["histology"],
+                "histology_label": int(row["histology_label"]),
+                "pathology": int(row["pathology"]),
+                "birads": int(row["birads"]),
+                "device": row["device"],
+                "image": image,
+                "tumor_mask": tumor_mask,
+            }
+        )
+
+    return records
+
+
+def verify_args(raw_data_dir: str, output_dir: str) -> None:
+    """Verify the command line arguments.
+
+    Args:
+        raw_data_dir: The path to the raw data directory.
+        output_dir: The path to the output directory.
+
+    Raises:
+        AssertionError: If any argument is invalid.
+    """
+    assert os.path.isdir(raw_data_dir), "raw_data_dir must be an existing directory"
+    assert os.path.isdir(output_dir), "output_dir must be an existing directory"
+    assert not os.path.exists(os.path.join(output_dir, OUTPUT_NAME)), (
+        "A version of the BUS-BRA dataset already exists in output_dir"
+    )
+
+
+def process_busbra(
+    raw_data_dir: Annotated[str, typer.Argument(help="The path to the raw data")],
+    output_dir: Annotated[
+        str, typer.Argument(help="The output directory for the processed dataset")
+    ],
+    size: Annotated[
+        int, typer.Option(help="Test image size (height and width in pixels)")
+    ] = 256,
+    publish: Annotated[
+        bool,
+        typer.Option(help="Whether to publish the dataset to the Hugging Face Hub"),
+    ] = False,
+) -> None:
+    """Prepare the BUS-BRA dataset as a Hugging Face DatasetDict.
+
+    Args:
+        raw_data_dir: The path to the raw data directory.
+        output_dir: The path to the output directory.
+        size: The height and width of the resized test images in pixels.
+        publish: Whether to publish the dataset to the Hugging Face Hub.
+    """
     verify_args(raw_data_dir, output_dir)
-    
-    # Collect examples
-    print("Collecting examples from BUSBRA dataset...")
-    examples = collect_examples(raw_data_dir)
-    df = pd.DataFrame.from_records(examples)
-    
-    print(f"Total number of examples: {len(df)}")
-    print(f"Pathology distribution:")
-    print(df['pathology'].value_counts())
-    
-    # Separate the test set (stratified by pathology)
-    train_val_df, test_df = train_test_split(
-        df, test_size=0.2, random_state=42, shuffle=True, stratify=df["label"]
-    )
-    
-    # Separate the training and validation sets
-    train_df, val_df = train_test_split(
-        train_val_df,
-        test_size=0.1,
-        random_state=42,
-        shuffle=True,
-        stratify=train_val_df["label"],
-    )
-    
-    # Create output directory
-    dataset_output_dir = os.path.join(output_dir, OUTPUT_NAME.format(__version__))
-    os.makedirs(dataset_output_dir, exist_ok=True)
-    
-    # Process and save each split
-    for split, subset_df in [
-        ("train", train_df),
-        ("validation", val_df),
-        ("test", test_df),
-    ]:
-        print(f"\nProcessing {split} set...")
-        copy_images(dataset_output_dir, subset_df)
-        generate_masks(dataset_output_dir, subset_df)
-        save_examples(dataset_output_dir, subset_df, split)
-        
-        print(f"Number of {split} examples: {len(subset_df)}")
-        print(f"{split.capitalize()} pathology distribution:")
-        print(subset_df['pathology'].value_counts())
-        
-        # Count examples with masks
-        num_with_masks = subset_df['mask'].notna().sum()
-        print(f"{split.capitalize()} examples with masks: {num_with_masks}/{len(subset_df)}")
-    
-    # Save version info (once, not in loop)
-    save_version_info(dataset_output_dir, __version__)
-    
-    print(f"\nDataset processing complete!")
-    print(f"Output saved to: {dataset_output_dir}")
+    raw_data_dir = os.path.join(raw_data_dir, "BUSBRA")
 
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Process BUSBRA dataset')
-    parser.add_argument('--raw_data_dir', type=str, help='Path to the raw BUSBRA data directory')
-    parser.add_argument('--output_dir', type=str, help='Output directory for the processed dataset')
-    
-    args = parser.parse_args()
-    busbra(args.raw_data_dir, args.output_dir)
+    df = collect_metadata(raw_data_dir)
+
+    splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, test_idx = next(splitter.split(df, groups=df["patient"]))
+    train_df = df.iloc[train_idx].reset_index(drop=True)
+    test_df = df.iloc[test_idx].reset_index(drop=True)
+
+    print(f"Train examples: {len(train_df)}, Test examples: {len(test_df)}")
+
+    train_records = process_examples(raw_data_dir, train_df)
+    test_records = process_examples(raw_data_dir, test_df)
+    test_resized_records = process_examples(raw_data_dir, test_df, size=size)
+
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_list(train_records, info=DATASET_INFO),
+            "test": Dataset.from_list(test_records, info=DATASET_INFO),
+            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
+        }
+    )
+
+    output_path = Path(output_dir) / OUTPUT_NAME
+    dataset.save_to_disk(str(output_path))
+
+    gt_dir = output_path / f"test.{size}"
+
+    generate_classification_ground_truth_from_records(
+        [{"filename": r["filename"], "label": r["pathology"]} for r in test_records],
+        gt_dir / "ground_truth_classification_pathology.csv",
+    )
+    generate_classification_ground_truth_from_records(
+        [
+            {"filename": r["filename"], "label": r["histology_label"]}
+            for r in test_records
+        ],
+        gt_dir / "ground_truth_classification_histology.csv",
+    )
+    generate_segmentation_ground_truth_from_records(
+        test_records,
+        mask_key="tumor_mask",
+        classes=[1],
+        output_path=gt_dir / "ground_truth_segmentation.csv",
+    )
+
+    save_version_info(str(output_path), __version__)
+
+    if publish:
+        dataset.push_to_hub(
+            OUTPUT_NAME,
+            commit_message=f"Update the dataset to Version {__version__}.",
+            private=True,
+        )
+
+        api = HfApi()
+        operations = [
+            CommitOperationAdd(
+                path_in_repo="test-ground-truth-classification-pathology.csv",
+                path_or_fileobj=gt_dir / "ground_truth_classification_pathology.csv",
+            ),
+            CommitOperationAdd(
+                path_in_repo=f"test.{size}-ground-truth-classification-histology.csv",
+                path_or_fileobj=gt_dir / "ground_truth_classification_histology.csv",
+            ),
+            CommitOperationAdd(
+                path_in_repo=f"test.{size}-ground-truth-segmentation.csv",
+                path_or_fileobj=gt_dir / "ground_truth_segmentation.csv",
+            ),
+        ]
+        api.create_commit(
+            repo_id=OUTPUT_NAME,
+            repo_type="dataset",
+            operations=operations,
+            commit_message=f"Update ground truth CSV files for Version {__version__}.",
+        )
