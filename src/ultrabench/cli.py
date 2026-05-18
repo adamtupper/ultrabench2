@@ -4,7 +4,7 @@ from .download import (
     download_aul,
     download_butterfly,
     download_camus,
-    download_fatty_liver,
+    download_masld,
     download_pocus,
     download_psfhs,
 )
@@ -35,7 +35,7 @@ _DOWNLOADABLE = [
     ("aul", download_aul),
     ("butterfly", download_butterfly),
     ("camus", download_camus),
-    ("masld", download_fatty_liver),
+    ("masld", download_masld),
     ("pocus", download_pocus),
     ("psfhs", download_psfhs),
 ]
