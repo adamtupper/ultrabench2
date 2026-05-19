@@ -21,6 +21,7 @@ from .process import (
     process_pocus,
     process_psfhs,
     process_stanford_thyroid,
+    process_tn3k,
 )
 
 app = typer.Typer(no_args_is_help=True)
@@ -57,6 +58,7 @@ _ALL = [
     ("pocus", process_pocus),
     ("psfhs", process_psfhs),
     ("stanford-thyroid", process_stanford_thyroid),
+    ("tn3k", process_tn3k),
 ]
 for _name, _process_fn in _ALL:
     process_app.command(_name)(_process_fn)
