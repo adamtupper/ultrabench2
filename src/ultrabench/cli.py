@@ -5,6 +5,7 @@ from .download import (
     download_busbra,
     download_butterfly,
     download_camus,
+    download_fetal_planes,
     download_masld,
     download_pocus,
     download_psfhs,
@@ -14,6 +15,7 @@ from .process import (
     process_busbra,
     process_butterfly,
     process_camus,
+    process_fetal_planes,
     process_gbcu,
     process_masld,
     process_mmotu,
@@ -39,6 +41,7 @@ _DOWNLOADABLE = [
     ("busbra", download_busbra),
     ("butterfly", download_butterfly),
     ("camus", download_camus),
+    ("fetal-planes", download_fetal_planes),
     ("masld", download_masld),
     ("pocus", download_pocus),
     ("psfhs", download_psfhs),
@@ -48,6 +51,7 @@ for _name, _dl_fn in _DOWNLOADABLE:
 
 _ALL = [
     ("aul", process_aul),
+    ("fetal-planes", process_fetal_planes),
     ("busbra", process_busbra),
     ("butterfly", process_butterfly),
     ("camus", process_camus),
