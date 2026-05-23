@@ -9,6 +9,7 @@ from .download import (
     download_masld,
     download_pocus,
     download_psfhs,
+    download_stmus,
 )
 from .process import (
     process_aul,
@@ -23,6 +24,7 @@ from .process import (
     process_pocus,
     process_psfhs,
     process_stanford_thyroid,
+    process_stmus,
     process_tn3k,
 )
 
@@ -45,6 +47,7 @@ _DOWNLOADABLE = [
     ("masld", download_masld),
     ("pocus", download_pocus),
     ("psfhs", download_psfhs),
+    ("stmus", download_stmus),
 ]
 for _name, _dl_fn in _DOWNLOADABLE:
     download_app.command(_name)(_dl_fn)
@@ -62,6 +65,7 @@ _ALL = [
     ("pocus", process_pocus),
     ("psfhs", process_psfhs),
     ("stanford-thyroid", process_stanford_thyroid),
+    ("stmus", process_stmus),
     ("tn3k", process_tn3k),
 ]
 for _name, _process_fn in _ALL:

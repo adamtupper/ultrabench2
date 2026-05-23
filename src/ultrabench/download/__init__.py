@@ -7,3 +7,4 @@ from .fetal_planes import download_fetal_planes
 from .masld import download_masld
 from .pocus import download_pocus
 from .psfhs import download_psfhs
+from .stmus import download_stmus
