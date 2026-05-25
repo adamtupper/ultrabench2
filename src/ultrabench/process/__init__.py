@@ -3,6 +3,7 @@ from .aul import process_aul
 from .busbra import process_busbra
 from .butterfly import process_butterfly
 from .camus import process_camus
+from .covid_blues import process_covid_blues
 from .fetal_planes import process_fetal_planes
 from .gbcu import process_gbcu
 from .masld import process_masld
