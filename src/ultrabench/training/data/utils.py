@@ -8,7 +8,7 @@ import numpy as np
 from datasets import Dataset
 from sklearn.model_selection import GroupShuffleSplit
 
-from data.transforms import albumentations_transforms  # ty:ignore[unresolved-import]
+from ultrabench.training.data.transforms import albumentations_transforms
 
 
 def train_test_split(
@@ -62,6 +62,7 @@ def get_splits(
     stratify_by: str | None = None,
     group_by: str | None = None,
     filter_by: str | None = None,
+    subset: str | None = None,
 ) -> tuple[Dataset, Dataset, Dataset]:
     """Get the train, val and test splits for a Hugging Face dataset.
 
@@ -85,11 +86,12 @@ def get_splits(
             included.
         group_by: Optional column to to group by for train/val
             splitting.
+        subset: Optional subset/configuration of the dataset to load.
 
     Returns:
         The train, val and test splits.
     """
-    train_val_data = datasets.load_dataset(path, split="train")
+    train_val_data = datasets.load_dataset(path, name=subset, split="train")
 
     if filter_by is not None:
         train_val_data = train_val_data.filter(lambda x: x[filter_by] is not None)
@@ -100,7 +102,7 @@ def get_splits(
         stratify_by=stratify_by,
         group_by=group_by,
     )
-    test_data = datasets.load_dataset(path, split="test")
+    test_data = datasets.load_dataset(path, name=subset, split="test")
 
     train_data = train_data.rename_columns(
         {

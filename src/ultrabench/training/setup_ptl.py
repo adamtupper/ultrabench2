@@ -48,6 +48,7 @@ class UltraBenchDataModule(pl.LightningDataModule):
         cfg = self.cfg
         self.train_dataset, self.val_dataset, self.test_dataset = get_splits(
             path=cfg.task.dataset,
+            subset=cfg.task.subset,
             input_key=cfg.task.input,
             target_key=cfg.task.target,
             train_transform=self.train_transform,
@@ -542,8 +543,8 @@ class DownstreamPipeline:
             callbacks.append(
                 EarlyStopping(
                     monitor="val_loss",
-                    patience=cfg.optimization.patience,
-                    mode="min",  # ty:ignore[unresolved-attribute]
+                    patience=cfg.optimization.patience,  # ty:ignore[unresolved-attribute]
+                    mode="min",
                 )  # ty:ignore[invalid-argument-type]
             )
 
@@ -563,9 +564,9 @@ class DownstreamPipeline:
             gradient_clip_algorithm="norm",
             callbacks=callbacks,  # ty:ignore[invalid-argument-type]
             logger=TensorBoardLogger(
-                save_dir=output_dir,
+                save_dir=output_dir,  # ty:ignore[invalid-argument-type]
                 name="tensorboard",
-                version="",  # ty:ignore[invalid-argument-type]
+                version="",
             ),
             accelerator="auto",
             devices=1,
