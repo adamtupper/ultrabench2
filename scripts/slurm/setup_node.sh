@@ -19,7 +19,7 @@ export HF_HOME=$project/data/hf
 export TQDM_DISABLE=1
 
 # Copy code to compute node
-rsync -a $project/UltraBench2o_dev $SLURM_TMPDIR --exclude-from=$project/UltraBench2o_dev/.gitignore
+rsync -a $project/ultrabench2 $SLURM_TMPDIR --exclude-from=$project/ultrabench2/.gitignore
 
 # Create virtual environment
 virtualenv --no-download $SLURM_TMPDIR/env
@@ -27,7 +27,7 @@ source $SLURM_TMPDIR/env/bin/activate
 
 # Install package and dependencies
 pip install --no-index --upgrade pip
-pip install --no-index --find-links=$project/wheels -r $SLURM_TMPDIR/UltraBench2o_dev/requirements.txt
+pip install --no-index --find-links=$project/wheels -e $SLURM_TMPDIR/ultrabench2[training]
 
 # Change to working directory
 cd $SLURM_TMPDIR
