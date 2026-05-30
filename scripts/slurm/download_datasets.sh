@@ -21,7 +21,8 @@ python scripts/slurm/download_dataset.py --name UltraBench/BUS-BRA --cache_dir $
 python scripts/slurm/download_dataset.py --name UltraBench/Butterfly --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/CAMUS --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/COVID-BLUES --cache_dir $project/data/hf/datasets
-python scripts/slurm/download_dataset.py --name UltraBench/FetalPlanes --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/FetalPlanes --config fetal --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/FetalPlanes --config fetal_brain --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/GBCU --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/MASLD --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/MMOTU-2D --cache_dir $project/data/hf/datasets

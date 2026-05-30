@@ -22,6 +22,12 @@ def parse_args() -> argparse.Namespace:
         help="The name of the dataset to download.",
     )
     parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="The configuration of the dataset to download. Defaults to None.",
+    )
+    parser.add_argument(
         "--cache_dir",
         type=str,
         default=None,
@@ -33,7 +39,7 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
-    _ = datasets.load_dataset(args.name, cache_dir=args.cache_dir)
+    _ = datasets.load_dataset(args.name, name=args.config, cache_dir=args.cache_dir)
 
 
 if __name__ == "__main__":
