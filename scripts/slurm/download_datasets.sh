@@ -17,8 +17,11 @@ hf auth login --token $HF_TOKEN
 cd $project/UltraBench2o_dev
 
 python scripts/slurm/download_dataset.py --name UltraBench/AUL --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/BUS-BRA --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/Butterfly --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/CAMUS --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/COVID-BLUES --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/FetalPlanes --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/GBCU --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/MASLD --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/MMOTU-2D --cache_dir $project/data/hf/datasets
@@ -26,6 +29,8 @@ python scripts/slurm/download_dataset.py --name UltraBench/OpenKidney --cache_di
 python scripts/slurm/download_dataset.py --name UltraBench/POCUS --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/PSFHS --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/StanfordThyroid --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/STMUS --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/TN3k --cache_dir $project/data/hf/datasets
 
 deactivate
 rm -r ~/venvs/hf
