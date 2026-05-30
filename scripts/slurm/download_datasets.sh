@@ -14,7 +14,7 @@ pip install --no-index huggingface_hub datasets
 
 hf auth login --token $HF_TOKEN
 
-cd $project/UltraBench2o_dev
+cd $project/ultrabench2
 
 python scripts/slurm/download_dataset.py --name UltraBench/AUL --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/BUS-BRA --cache_dir $project/data/hf/datasets
