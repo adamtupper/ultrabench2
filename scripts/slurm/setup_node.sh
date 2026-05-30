@@ -26,8 +26,9 @@ virtualenv --no-download $SLURM_TMPDIR/env
 source $SLURM_TMPDIR/env/bin/activate
 
 # Install package and dependencies
+cd $SLURM_TMPDIR/ultrabench2
 pip install --no-index --upgrade pip
-pip install --no-index --find-links=$project/wheels -e $SLURM_TMPDIR/ultrabench2[training]
+pip install --no-index --find-links=$project/wheels -e . --group training
 
 # Change to working directory
 cd $SLURM_TMPDIR
