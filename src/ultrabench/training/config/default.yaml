@@ -26,6 +26,8 @@ system:
   data_dir: "/radraid/aradhachandran/foundation/ultrabench_data_v2"
   output_dir: "/raid/aradhachandran/thyroid/code/UltraBench2o/logs"
   checkpoint_dir: baselines
+  log_every_n_steps: 50
+  enable_progress_bar: true
 
 hydra:
   run:

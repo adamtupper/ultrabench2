@@ -570,8 +570,8 @@ class DownstreamPipeline:
             ),
             accelerator="auto",
             devices=1,
-            enable_progress_bar=True,
-            log_every_n_steps=1,
+            enable_progress_bar=cfg.system.enable_progress_bar,  # ty:ignore[unresolved-attribute]
+            log_every_n_steps=cfg.system.log_every_n_steps,  # ty:ignore[unresolved-attribute]
         )
 
         trainer.fit(module, datamodule=datamodule)

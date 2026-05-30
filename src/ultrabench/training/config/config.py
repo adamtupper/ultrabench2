@@ -46,6 +46,8 @@ class SystemConfig:
     data_dir: str = MISSING
     output_dir: str = MISSING
     data_loader_workers: int = 0
+    log_every_n_steps: int = 50
+    enable_progress_bar: bool = True
 
 
 @dataclass
