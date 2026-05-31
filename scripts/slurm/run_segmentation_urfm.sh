@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=segmentation-urfm
 #SBATCH --nodes=1
-#SBATCH --mem=24G
+#SBATCH --mem=15G
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
-#SBATCH --array=0-17%1
+#SBATCH --array=0-53%1
 #
 # Run downstream segmentation evaluation for URFM. Launches individual
 # jobs for each task, evaluation method, and seed combo.
@@ -15,14 +15,17 @@
 set -e
 
 SEEDS=(42 43 44)
-METHODS=(upsampler_probe)
+METHODS=(upsampler_probe full_finetune_seg)
 TASKS=(
-    aul_mass_segmentation
     aul_liver_segmentation
+    aul_mass_segmentation
+    camus_segmentation
     mmotu_segmentation
     open_kidney_capsule_segmentation
     open_kidney_regions_segmentation
     psfhs_segmentation
+    stmus_segmentation
+    tn3k_segmentation
 )
 
 declare -a combos
@@ -34,7 +37,7 @@ for seed in "${SEEDS[@]}"; do
     done
 done
 
-source $project/UltraBench2o_dev/scripts/slurm/setup_node.sh
+source $project/ultrabench2/scripts/slurm/setup_node.sh
 
 cd $SLURM_TMPDIR
 
@@ -49,10 +52,11 @@ ACCUM_GRAD=1
 EPOCHS=100
 PATIENCE=null
 
-python UltraBench2o_dev/main_launch.py -m \
+python ultrabench2/src/ultrabench/training/main_launch.py \
     system.output_dir=${OUTPUT_DIR} \
     system.checkpoint_dir=${CHECKPOINT_DIR} \
     system.data_loader_workers=${SLURM_CPUS_PER_TASK} \
+    system.enable_progress_bar=false \
     model=${MODEL} \
     task=${TASK} \
     "mode@cls_mode=none" \

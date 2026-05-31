@@ -4,8 +4,8 @@
 #SBATCH --mem=15G
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
-#SBATCH --time=3:00:00
-#SBATCH --array=0-14%1
+#SBATCH --time=8:00:00
+#SBATCH --array=0-71%1
 #
 # Run downstream classification evaluation for UltraSAM. Launches
 # individual jobs for each task, evaluation method, and seed combo.
@@ -15,13 +15,20 @@
 set -e
 
 SEEDS=(42 43 44)
-METHODS=(linear_probe)
+METHODS=(linear_probe full_finetune_cls)
 TASKS=(
     aul_mass_classification
+    busbra_histology_classification
+    busbra_pathology_classification
     butterfly_classification
-    masld_classification
+    camus_classification
+    covid_blues_classification
+    fetal_planes_brain_plane_classification
+    fetal_planes_plane_classification
     gbcu_classification
+    masld_classification
     mmotu_classification
+    tn3k_classification
 )
 
 declare -a combos
@@ -33,7 +40,7 @@ for seed in "${SEEDS[@]}"; do
     done
 done
 
-source $project/UltraBench2o_dev/scripts/slurm/setup_node.sh
+source $project/ultrabench2/scripts/slurm/setup_node.sh
 
 cd $SLURM_TMPDIR
 
@@ -48,10 +55,11 @@ ACCUM_GRAD=1
 EPOCHS=100
 PATIENCE=null
 
-python UltraBench2o_dev/main_launch.py -m \
+python ultrabench2/src/ultrabench/training/main_launch.py \
     system.output_dir=${OUTPUT_DIR} \
     system.checkpoint_dir=${CHECKPOINT_DIR} \
     system.data_loader_workers=${SLURM_CPUS_PER_TASK} \
+    system.enable_progress_bar=false \
     model=${MODEL} \
     task=${TASK} \
     "mode@cls_mode=${METHOD}" \
