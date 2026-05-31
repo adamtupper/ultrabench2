@@ -31,7 +31,7 @@ python scripts/slurm/download_dataset.py --name UltraBench/POCUS --cache_dir $pr
 python scripts/slurm/download_dataset.py --name UltraBench/PSFHS --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/StanfordThyroid --cache_dir $project/data/hf/datasets
 python scripts/slurm/download_dataset.py --name UltraBench/STMUS --cache_dir $project/data/hf/datasets
-python scripts/slurm/download_dataset.py --name UltraBench/TN3k --cache_dir $project/data/hf/datasets
+python scripts/slurm/download_dataset.py --name UltraBench/TN3K --cache_dir $project/data/hf/datasets
 
 deactivate
 rm -r ~/venvs/hf
