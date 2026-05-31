@@ -57,7 +57,9 @@ def get_ultrasam_extractor(device="cuda", checkpoint_path=None):
             checkpoint_path, map_location=device, weights_only=False
         )
     else:
-        raise FileNotFoundError(f"Could not find URFM weights at: {checkpoint_path}")
+        raise FileNotFoundError(
+            f"Could not find UltraSAM weights at: {checkpoint_path}"
+        )
 
     encoder = ViTSAM(
         use_gradient_checkpointing=True  # hard setting to True because we know this is necessary to avoid using accum_grad
