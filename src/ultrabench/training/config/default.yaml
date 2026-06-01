@@ -16,8 +16,9 @@ data:
 optimization:
   batch_size: 2
   accum_grad: 1
-  num_epochs: 150
-  patience: 15
+  max_steps: 10000
+  val_check_interval: 100  # steps
+  patience: 10  # validation checks
   seed: 42  # Single value - sweep with -m optimization.seed=42,43,44,45,46
 
 system:

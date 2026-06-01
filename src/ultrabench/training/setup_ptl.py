@@ -86,9 +86,11 @@ class UltraBenchDataModule(pl.LightningDataModule):
 
 
 class UltraBenchModule(pl.LightningModule):
-    """
-    LightningModule for ProbeWrapper and SegmentationWrapper (frozen encoder) tasks.
-    Handles training, validation, and test steps with torchmetrics and CSV prediction saving.
+    """LightningModule for ProbeWrapper and SegmentationWrapper (frozen
+    encoder) tasks.
+
+    Handles training, validation, and test steps with torchmetrics and CSV
+    prediction saving.
     """
 
     def __init__(
@@ -108,8 +110,6 @@ class UltraBenchModule(pl.LightningModule):
         self.is_seg = task_type == "segmentation"
         num_classes = model.num_classes
 
-        # Metrics declared as nn.Module attributes so PTL moves them to the right device
-        # and resets them automatically between epochs.
         if self.is_seg:
             self.train_metric = DiceScore(num_classes=num_classes, input_format="mixed")
             self.val_metric = DiceScore(num_classes=num_classes, input_format="mixed")
@@ -147,6 +147,11 @@ class UltraBenchModule(pl.LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
+    @property
+    def backbone(self) -> nn.Module:
+        """Return the encoder for use with finetuning callbacks."""
+        return self.model.encoder
+
     # TRAINING
     def training_step(self, batch: Dict, batch_idx: int) -> torch.Tensor:
         images = batch["image"]
@@ -162,8 +167,6 @@ class UltraBenchModule(pl.LightningModule):
             self.log(
                 "train_dice",
                 self.train_metric,
-                on_step=False,
-                on_epoch=True,
                 prog_bar=True,
             )
         else:
@@ -171,12 +174,10 @@ class UltraBenchModule(pl.LightningModule):
             self.log(
                 "train_acc",
                 self.train_metric,
-                on_step=False,
-                on_epoch=True,
                 prog_bar=True,
             )
 
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train_loss", loss, prog_bar=True)
         return loss
 
     # VALIDATION
@@ -191,16 +192,12 @@ class UltraBenchModule(pl.LightningModule):
 
         if self.is_seg:
             self.val_metric.update(outputs, targets)
-            self.log(
-                "val_dice", self.val_metric, on_step=False, on_epoch=True, prog_bar=True
-            )
+            self.log("val_dice", self.val_metric, prog_bar=True)
         else:
             self.val_metric.update(outputs.argmax(dim=1), targets)
-            self.log(
-                "val_acc", self.val_metric, on_step=False, on_epoch=True, prog_bar=True
-            )
+            self.log("val_acc", self.val_metric, prog_bar=True)
 
-        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_loss", loss, prog_bar=True)
 
     # TEST
     def on_test_epoch_start(self) -> None:
@@ -284,8 +281,8 @@ class FullFinetuningModule(UltraBenchModule):
     LightningModule for FullFinetuningWrapper.
 
     Phase 1 (epoch < probe_warmup_epochs): encoder frozen, head-only optimizer.
-    Phase 2 (epoch >= probe_warmup_epochs): encoder unfrozen, two-group optimizer
-        with separate LRs, optional cosine scheduler.
+    Phase 2 (epoch >= probe_warmup_epochs): encoder unfrozen, two-group
+        optimizer with separate LRs, optional cosine scheduler.
     """
 
     def __init__(
@@ -497,8 +494,9 @@ class DownstreamPipeline:
         output_type = encoder_metadata.get("output_type", cfg.model.output_type)  # ty:ignore[unresolved-attribute]
         if task_type == "segmentation" and output_type == "cls":
             raise ValueError(
-                "Encoder output_type='cls' produces a single vector per image and cannot "
-                "be used for segmentation. Use a ViT encoder with output_type='patch_tokens'."
+                "Encoder output_type='cls' produces a single vector per image "
+                "and cannot be used for segmentation. Use a ViT encoder with "
+                "output_type='patch_tokens'."
             )
 
         model = create_wrapper(
@@ -550,14 +548,17 @@ class DownstreamPipeline:
 
         num_trainable = sum(p.numel() for p in model.get_trainable_parameters())
         logger.info(
-            "Starting training %d parameters for %d epochs with patience=%s",
+            "Starting training %d parameters for %d steps with patience=%s",
             num_trainable,
-            cfg.optimization.num_epochs,  # ty:ignore[unresolved-attribute]
+            cfg.optimization.max_steps,  # ty:ignore[unresolved-attribute]
             cfg.optimization.patience,  # ty:ignore[unresolved-attribute]
         )
 
         trainer = pl.Trainer(
-            max_epochs=cfg.optimization.num_epochs,  # ty:ignore[unresolved-attribute]
+            max_epochs=-1,
+            max_steps=cfg.optimization.max_steps,  # ty:ignore[unresolved-attribute]
+            log_every_n_steps=cfg.system.log_every_n_steps,  # ty:ignore[unresolved-attribute]
+            val_check_interval=cfg.optimization.val_check_interval,  # ty:ignore[unresolved-attribute]
             precision=self.precision,  # ty:ignore[invalid-argument-type]
             accumulate_grad_batches=cfg.optimization.accum_grad,  # ty:ignore[unresolved-attribute]
             gradient_clip_val=getattr(mode_cfg, "max_grad_norm", None),
@@ -571,7 +572,6 @@ class DownstreamPipeline:
             accelerator="auto",
             devices=1,
             enable_progress_bar=cfg.system.enable_progress_bar,  # ty:ignore[unresolved-attribute]
-            log_every_n_steps=cfg.system.log_every_n_steps,  # ty:ignore[unresolved-attribute]
         )
 
         trainer.fit(module, datamodule=datamodule)

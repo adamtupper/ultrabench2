@@ -32,10 +32,9 @@ class DataConfig:
 @dataclass
 class OptimizationConfig:
     batch_size: int = 32
-    num_epochs: int = 150
-    # learning_rate: float = 1.0e-3
-    # weight_decay: float = 1.0e-4
-    patience: Optional[int] = 15
+    max_steps: int = 10_000
+    val_check_interval: int = 100  # steps
+    patience: Optional[int] = 10  # validation checks
     seed: int = 42
     accum_grad: int = 1
 
