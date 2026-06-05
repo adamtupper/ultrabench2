@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def multiplicative(_step: int) -> float:
     """Default multiplicative factor for backbone LR scheduling."""
-    return 2.0
+    return 1.001
 
 
 class BackboneFinetuningSteps(BaseFinetuning):
@@ -24,12 +24,15 @@ class BackboneFinetuningSteps(BaseFinetuning):
     Step-based equivalent of
     :class:`lightning.pytorch.callbacks.BackboneFinetuning`. Unfreezes the
     backbone at a specific global step instead of an epoch boundary, then
-    applies per-epoch LR scaling via ``lambda_func``.
+    applies per-step LR scaling via ``lambda_func`` on every subsequent
+    training step. ``finetune_function`` is a no-op; all LR scaling occurs
+    in ``on_train_batch_start``.
 
     Args:
         unfreeze_backbone_at_step: Global step at which the backbone will be
             unfrozen.
-        lambda_func: Scheduling function for increasing backbone learning rate.
+        lambda_func: Multiplicative scheduling function applied each step to
+            increase the backbone learning rate.
         backbone_initial_ratio_lr: Used to scale down the backbone LR compared
             to the rest of the model.
         backbone_initial_lr: Optional initial learning rate for the backbone.
@@ -116,30 +119,8 @@ class BackboneFinetuningSteps(BaseFinetuning):
         epoch: int,
         optimizer: Optimizer,
     ) -> None:
-        """Scale backbone LR each epoch after unfreezing.
-
-        Args:
-            pl_module: The LightningModule being trained.
-            epoch: The current epoch number.
-            optimizer: The optimizer for this epoch.
-        """
-        if self.previous_backbone_lr is None:
-            return
-        current_lr = optimizer.param_groups[0]["lr"]
-        next_backbone_lr = self.lambda_func(epoch + 1) * self.previous_backbone_lr
-        next_backbone_lr = (
-            current_lr
-            if (self.should_align and next_backbone_lr > current_lr)
-            else next_backbone_lr
-        )
-        optimizer.param_groups[-1]["lr"] = next_backbone_lr
-        self.previous_backbone_lr = next_backbone_lr
-        if self.verbose:
-            log.info(
-                "Current lr: %s, Backbone lr: %s",
-                round(current_lr, self.rounding),
-                round(next_backbone_lr, self.rounding),
-            )
+        """No-op. LR scaling is applied per-step in on_train_batch_start."""
+        return
 
     def on_train_batch_start(
         self,
@@ -148,7 +129,7 @@ class BackboneFinetuningSteps(BaseFinetuning):
         batch: Any,
         batch_idx: int,
     ) -> None:
-        """Unfreeze the backbone at the target global step.
+        """Unfreeze the backbone at the target global step, then scale LR.
 
         Args:
             trainer: The Lightning Trainer.
@@ -156,38 +137,54 @@ class BackboneFinetuningSteps(BaseFinetuning):
             batch: The current batch.
             batch_idx: The index of the current batch.
         """
-        if (
-            self.previous_backbone_lr is not None
-            or trainer.global_step < self.unfreeze_step
-        ):
-            return
-
         optimizer = trainer.optimizers[0]
-        num_param_groups = len(optimizer.param_groups)
 
-        current_lr = optimizer.param_groups[0]["lr"]
-        initial_backbone_lr = (
-            self.backbone_initial_lr
-            if self.backbone_initial_lr is not None
-            else current_lr * self.backbone_initial_ratio_lr
-        )
-        self.previous_backbone_lr = initial_backbone_lr
-        self.unfreeze_and_add_param_group(
-            pl_module.backbone,
-            optimizer,
-            initial_backbone_lr,
-            train_bn=self.train_bn,
-            initial_denom_lr=self.initial_denom_lr,
-        )
-        # Must call _store() here. BaseFinetuning.on_train_epoch_start()
-        # already ran for this epoch and captured num_param_groups before
-        # unfreeze. At the next epoch start it will see
-        # num_param_groups == len(current) and be a no-op — the backbone
-        # group would never be recorded without this.
-        self._store(pl_module, 0, num_param_groups, optimizer.param_groups)
-        if self.verbose:
-            log.info(
-                "Current lr: %s, Backbone lr: %s",
-                round(current_lr, self.rounding),
-                round(initial_backbone_lr, self.rounding),
+        if self.previous_backbone_lr is None:
+            if trainer.global_step < self.unfreeze_step:
+                return
+
+            num_param_groups = len(optimizer.param_groups)
+            current_lr = optimizer.param_groups[0]["lr"]
+            initial_backbone_lr = (
+                self.backbone_initial_lr
+                if self.backbone_initial_lr is not None
+                else current_lr * self.backbone_initial_ratio_lr
             )
+            self.previous_backbone_lr = initial_backbone_lr
+            self.unfreeze_and_add_param_group(
+                pl_module.backbone,
+                optimizer,
+                initial_backbone_lr,
+                train_bn=self.train_bn,
+                initial_denom_lr=self.initial_denom_lr,
+            )
+            # Must call _store() here. BaseFinetuning.on_train_epoch_start()
+            # already ran for this epoch and captured num_param_groups before
+            # unfreeze. At the next epoch start it will see
+            # num_param_groups == len(current) and be a no-op — the backbone
+            # group would never be recorded without this.
+            self._store(pl_module, 0, num_param_groups, optimizer.param_groups)
+            if self.verbose:
+                log.info(
+                    "Current lr: %s, Backbone lr: %s",
+                    round(current_lr, self.rounding),
+                    round(initial_backbone_lr, self.rounding),
+                )
+        else:
+            current_lr = optimizer.param_groups[0]["lr"]
+            next_backbone_lr = (
+                self.lambda_func(trainer.global_step) * self.previous_backbone_lr
+            )
+            next_backbone_lr = (
+                current_lr
+                if (self.should_align and next_backbone_lr > current_lr)
+                else next_backbone_lr
+            )
+            optimizer.param_groups[-1]["lr"] = next_backbone_lr
+            self.previous_backbone_lr = next_backbone_lr
+            if self.verbose:
+                log.info(
+                    "Current lr: %s, Backbone lr: %s",
+                    round(current_lr, self.rounding),
+                    round(next_backbone_lr, self.rounding),
+                )

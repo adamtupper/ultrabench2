@@ -204,11 +204,10 @@ class TestOnFitStart:
 class TestFinetuneFunctionLrScaling:
     """Tests for BackboneFinetuningSteps.finetune_function."""
 
-    def test_no_op_when_not_unfrozen(self):
-        """finetune_function is a no-op when previous_backbone_lr is None."""
+    def test_no_op(self):
+        """finetune_function is always a no-op; LR scaling happens per-step."""
         cb = BackboneFinetuningSteps()
         optimizer = _make_optimizer(lr=1e-3)
-        # Add a dummy second param group to detect any modification
         optimizer.add_param_group(
             {
                 "params": [nn.Parameter(torch.zeros(1))],
@@ -216,64 +215,9 @@ class TestFinetuneFunctionLrScaling:
             }
         )
         module = MagicMock()
+        cb.previous_backbone_lr = 1e-4  # simulate post-unfreeze state
         cb.finetune_function(module, epoch=0, optimizer=optimizer)
         assert optimizer.param_groups[-1]["lr"] == pytest.approx(5e-4)
-
-    def test_scales_backbone_lr(self):
-        """finetune_function scales param_groups[-1]['lr'] via lambda_func."""
-        cb = BackboneFinetuningSteps(
-            lambda_func=lambda e: 2.0,
-            should_align=False,
-        )
-        cb.previous_backbone_lr = 1e-4
-        optimizer = _make_optimizer(lr=1e-3)
-        optimizer.add_param_group(
-            {
-                "params": [nn.Parameter(torch.zeros(1))],
-                "lr": 1e-4,
-            }
-        )
-        module = MagicMock()
-        cb.finetune_function(module, epoch=1, optimizer=optimizer)
-        assert optimizer.param_groups[-1]["lr"] == pytest.approx(2e-4)
-        assert cb.previous_backbone_lr == pytest.approx(2e-4)
-
-    def test_should_align_caps_backbone_lr(self):
-        """should_align=True caps backbone LR at current LR when exceeded."""
-        cb = BackboneFinetuningSteps(
-            lambda_func=lambda e: 100.0,  # would push backbone LR way above head LR
-            should_align=True,
-        )
-        cb.previous_backbone_lr = 1e-3
-        current_lr = 1e-3
-        optimizer = _make_optimizer(lr=current_lr)
-        optimizer.add_param_group(
-            {
-                "params": [nn.Parameter(torch.zeros(1))],
-                "lr": 1e-3,
-            }
-        )
-        module = MagicMock()
-        cb.finetune_function(module, epoch=1, optimizer=optimizer)
-        assert optimizer.param_groups[-1]["lr"] == pytest.approx(current_lr)
-
-    def test_updates_previous_backbone_lr(self):
-        """previous_backbone_lr is updated to next_backbone_lr each call."""
-        cb = BackboneFinetuningSteps(
-            lambda_func=lambda e: 3.0,
-            should_align=False,
-        )
-        cb.previous_backbone_lr = 1e-4
-        optimizer = _make_optimizer(lr=1e-2)
-        optimizer.add_param_group(
-            {
-                "params": [nn.Parameter(torch.zeros(1))],
-                "lr": 1e-4,
-            }
-        )
-        module = MagicMock()
-        cb.finetune_function(module, epoch=0, optimizer=optimizer)
-        assert cb.previous_backbone_lr == pytest.approx(3e-4)
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +313,55 @@ class TestOnTrainBatchStart:
         assert 0 in cb._internal_optimizer_metadata
         assert len(cb._internal_optimizer_metadata[0]) == 2
 
+    def test_scales_backbone_lr_per_step(self):
+        """Backbone LR is scaled by lambda_func on each step after unfreeze."""
+        factor = 2.0
+        cb = BackboneFinetuningSteps(
+            unfreeze_backbone_at_step=0,
+            lambda_func=lambda _: factor,
+            should_align=False,
+        )
+        module, optimizer = _make_module_and_optimizer(lr=1e-2)
+        for p in module.backbone.parameters():
+            p.requires_grad_(False)
+        self._run_batch_start(cb, global_step=0, module=module, optimizer=optimizer)
+        initial_backbone_lr = optimizer.param_groups[-1]["lr"]
+        self._run_batch_start(cb, global_step=1, module=module, optimizer=optimizer)
+        assert optimizer.param_groups[-1]["lr"] == pytest.approx(
+            initial_backbone_lr * factor
+        )
+
+    def test_should_align_caps_backbone_lr_per_step(self):
+        """should_align=True caps backbone LR at head LR each step."""
+        cb = BackboneFinetuningSteps(
+            unfreeze_backbone_at_step=0,
+            lambda_func=lambda _: 100.0,
+            should_align=True,
+        )
+        head_lr = 1e-3
+        module, optimizer = _make_module_and_optimizer(lr=head_lr)
+        for p in module.backbone.parameters():
+            p.requires_grad_(False)
+        self._run_batch_start(cb, global_step=0, module=module, optimizer=optimizer)
+        self._run_batch_start(cb, global_step=1, module=module, optimizer=optimizer)
+        assert optimizer.param_groups[-1]["lr"] == pytest.approx(head_lr)
+
+    def test_updates_previous_backbone_lr_per_step(self):
+        """previous_backbone_lr is updated to the new backbone LR each step."""
+        factor = 3.0
+        cb = BackboneFinetuningSteps(
+            unfreeze_backbone_at_step=0,
+            lambda_func=lambda _: factor,
+            should_align=False,
+        )
+        module, optimizer = _make_module_and_optimizer(lr=1e-2)
+        for p in module.backbone.parameters():
+            p.requires_grad_(False)
+        self._run_batch_start(cb, global_step=0, module=module, optimizer=optimizer)
+        initial_backbone_lr = cb.previous_backbone_lr
+        self._run_batch_start(cb, global_step=1, module=module, optimizer=optimizer)
+        assert cb.previous_backbone_lr == pytest.approx(initial_backbone_lr * factor)
+
 
 # ---------------------------------------------------------------------------
 # TestStateDict
@@ -426,31 +419,69 @@ class TestStateDict:
 
 
 class TestBackboneProperty:
-    """Tests for the UltraBenchModule.backbone property."""
+    """Tests for UltraBenchModule.backbone attribute."""
 
     def _make_ultrabench_module(self):
-        """Return a minimal UltraBenchModule with a real encoder."""
+        """Return a minimal UltraBenchModule with a real backbone and head."""
         from ultrabench.training.setup_ptl import UltraBenchModule
 
-        encoder = nn.Linear(4, 2)
-        model = MagicMock()
-        model.encoder = encoder
-        model.num_classes = 2
+        backbone = nn.Linear(4, 4)
+        head = nn.Linear(4, 2)
 
         return UltraBenchModule(
-            model=model,
+            backbone=backbone,
+            head=head,
             criterion=nn.CrossEntropyLoss(),
             mode_cfg=MagicMock(),
             task_type="classification",
             output_dir="/tmp",
-        )
+            num_classes=2,
+        ), backbone
 
     def test_backbone_returns_encoder(self):
-        """UltraBenchModule.backbone is the same object as model.encoder."""
-        module = self._make_ultrabench_module()
-        assert module.backbone is module.model.encoder
+        """UltraBenchModule.backbone is the backbone passed at construction."""
+        module, backbone = self._make_ultrabench_module()
+        assert module.backbone is backbone
 
     def test_backbone_is_nn_module(self):
         """UltraBenchModule.backbone is an nn.Module instance."""
-        module = self._make_ultrabench_module()
+        module, _ = self._make_ultrabench_module()
         assert isinstance(module.backbone, nn.Module)
+
+    def test_train_keeps_frozen_backbone_in_eval(self):
+        """train() keeps backbone in eval mode when its params are frozen."""
+        from ultrabench.training.setup_ptl import UltraBenchModule
+
+        backbone = nn.Linear(4, 4)
+        for p in backbone.parameters():
+            p.requires_grad = False
+
+        module = UltraBenchModule(
+            backbone=backbone,
+            head=nn.Linear(4, 2),
+            criterion=nn.CrossEntropyLoss(),
+            mode_cfg=MagicMock(),
+            task_type="classification",
+            output_dir="/tmp",
+            num_classes=2,
+        )
+        module.train()
+        assert not backbone.training
+
+    def test_train_does_not_suppress_unfrozen_backbone(self):
+        """train() doesn't override backbone mode when params are trainable."""
+        from ultrabench.training.setup_ptl import UltraBenchModule
+
+        backbone = nn.Linear(4, 4)  # requires_grad=True by default
+
+        module = UltraBenchModule(
+            backbone=backbone,
+            head=nn.Linear(4, 2),
+            criterion=nn.CrossEntropyLoss(),
+            mode_cfg=MagicMock(),
+            task_type="classification",
+            output_dir="/tmp",
+            num_classes=2,
+        )
+        module.train()
+        assert backbone.training
