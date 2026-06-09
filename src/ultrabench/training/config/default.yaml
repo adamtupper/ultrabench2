@@ -7,19 +7,19 @@ defaults:
 
 data:
   setup: "ultrabench"
-  image_size: 256  # Target image size for transforms
-  shot_pct: 1.0  # Single value - sweep with -m data.shot_pct=0.1,0.5,1.0
-  train_val_split: 0.8  # Train/validation split ratio
+  image_size: 256 # Target image size for transforms
+  shot_pct: 1.0 # Single value - sweep with -m data.shot_pct=0.1,0.5,1.0
+  train_val_split: 0.8 # Train/validation split ratio
 
 optimization:
   batch_size: 32
   accum_grad: 1
   max_steps: 10000
   unfreeze_backbone_at_step: ${mode.unfreeze_backbone_at_step}
-  backbone_initial_ratio_lr: 0.1 
-  val_check_interval: 100  # steps
-  patience: 10  # validation checks
-  seed: 42  # Single value - sweep with -m optimization.seed=42,43,44,45,46
+  backbone_initial_ratio_lr: 0.1
+  val_check_interval: 100 # steps
+  patience: 10 # validation checks
+  seed: 42 # Single value - sweep with -m optimization.seed=42,43,44,45,46
   max_grad_norm: 1.0
 
 system:
