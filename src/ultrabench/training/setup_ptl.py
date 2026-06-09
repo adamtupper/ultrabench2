@@ -85,18 +85,31 @@ class UltraBenchDataModule(pl.LightningDataModule):
             len(self.test_dataset),
         )
 
-    def _make_loader(self, dataset: Any, shuffle: bool) -> DataLoader:
+    def _make_loader(
+        self, dataset: Any, shuffle: bool, drop_last: bool = False
+    ) -> DataLoader:
+        """Construct a data loader.
+
+        Args:
+            dataset: Dataset (split) to load from.
+            shuffle: Whether to shuffle the data (should be True for training).
+            drop_last: Whether to drop the last incomplete batch (should be
+                True for training).
+        Returns:
+            A DataLoader for the given dataset.
+        """
         return DataLoader(
             dataset,
             batch_size=self.batch_size,
             shuffle=shuffle,
+            drop_last=drop_last,
             num_workers=self.num_workers,
             pin_memory=torch.cuda.is_available(),
             persistent_workers=(self.num_workers > 0),
         )
 
     def train_dataloader(self) -> DataLoader:
-        return self._make_loader(self.train_dataset, shuffle=True)
+        return self._make_loader(self.train_dataset, shuffle=True, drop_last=True)
 
     def val_dataloader(self) -> DataLoader:
         return self._make_loader(self.val_dataset, shuffle=False)
