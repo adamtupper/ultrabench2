@@ -601,12 +601,16 @@ class DownstreamPipeline:
                 )
             )
 
+        val_check_interval = (
+            cfg.optimization.val_check_interval * cfg.optimization.accum_grad  # ty:ignore[unresolved-attribute]
+        )
+
         trainer = pl.Trainer(
             max_epochs=-1,
             max_steps=cfg.optimization.max_steps,  # ty:ignore[unresolved-attribute]
             log_every_n_steps=cfg.system.log_every_n_steps,  # ty:ignore[unresolved-attribute]
             check_val_every_n_epoch=None,
-            val_check_interval=cfg.optimization.val_check_interval,  # ty:ignore[unresolved-attribute]
+            val_check_interval=val_check_interval,
             precision=self.precision,  # ty:ignore[invalid-argument-type]
             accumulate_grad_batches=cfg.optimization.accum_grad,  # ty:ignore[unresolved-attribute]
             gradient_clip_val=cfg.optimization.max_grad_norm,  # ty:ignore[unresolved-attribute]
