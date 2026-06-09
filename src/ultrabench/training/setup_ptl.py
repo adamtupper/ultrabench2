@@ -42,6 +42,7 @@ class UltraBenchDataModule(pl.LightningDataModule):
         target_key: str,
         image_size: int,
         train_val_split: float,
+        augmentation_strategy: str,
         stratify_by: str | None,
         group_by: str | None,
         filter_by: str | None,
@@ -53,7 +54,6 @@ class UltraBenchDataModule(pl.LightningDataModule):
         self.subset = subset
         self.input_key = input_key
         self.target_key = target_key
-        self.image_size = image_size
         self.train_val_split = train_val_split
         self.stratify_by = stratify_by
         self.group_by = group_by
@@ -62,7 +62,7 @@ class UltraBenchDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
 
         self.train_transform, self.test_transform = get_train_test_transforms(
-            image_size
+            image_size, augmentation_strategy=augmentation_strategy
         )
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -556,6 +556,7 @@ class DownstreamPipeline:
             input_key=cfg.task.input,  # ty:ignore[unresolved-attribute]
             target_key=cfg.task.target,  # ty:ignore[unresolved-attribute]
             image_size=image_size,
+            augmentation_strategy=cfg.data.augmentation_strategy,  # ty:ignore[unresolved-attribute]
             train_val_split=cfg.data.train_val_split,  # ty:ignore[unresolved-attribute]
             stratify_by=cfg.task.stratify_by,  # ty:ignore[unresolved-attribute]
             group_by=cfg.task.group_by,  # ty:ignore[unresolved-attribute]

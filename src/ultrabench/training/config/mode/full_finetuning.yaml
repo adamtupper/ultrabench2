@@ -1,4 +1,5 @@
 unfreeze_backbone_at_step: 1000 # Unfreeze backbone after this many steps (train head only until then)
+augmentation_strategy: general # Options: null, general, mmotu, usaugment
 
 optimizer:
   _target_: torch.optim.AdamW
