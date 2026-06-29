@@ -1,0 +1,3 @@
+_target_: ultrabench.models.ultrafedfm.ultrafedfm_backbone.UltraFedFMBackbone
+checkpoint_path: ${system.checkpoint_dir}/ultrafedfm/ultrafedfm.pth
+output_intermediate_features: true

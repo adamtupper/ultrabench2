@@ -1,0 +1,3 @@
+_target_: ultrabench.models.deblurmim.deblurmim_backbone.DeblurMIMBackbone
+checkpoint_path: ${system.checkpoint_dir}/deblurmim/deblurmim.pth
+output_intermediate_features: true
