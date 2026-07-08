@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from monai.losses import DiceCELoss as _MonaiDiceCELoss
 
 class DiceBCELoss(nn.Module):
     """
@@ -124,7 +124,6 @@ class MonaiDiceCELoss(nn.Module):
                 denominator. Defaults to 1.0 to match DiceCELoss.
         """
         super().__init__()
-        from monai.losses import DiceCELoss as _MonaiDiceCELoss
 
         self._loss = _MonaiDiceCELoss(
             softmax=True,
