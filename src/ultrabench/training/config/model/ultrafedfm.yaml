@@ -1,3 +1,4 @@
 _target_: ultrabench.models.ultrafedfm.ultrafedfm_backbone.UltraFedFMBackbone
+model_variant: ultrafedfm_vit_large_patch16
 checkpoint_path: ${system.checkpoint_dir}/ultrafedfm/ultrafedfm.pth
 output_intermediate_features: true
