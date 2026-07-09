@@ -6,7 +6,7 @@ set -e
 # Pair with launch_loss_comparison_custom.sh to validate equivalence.
 
 export HF_HOME=/raid/aradhachandran/thyroid/code/UltraBench2o/hf_data
-export CUDA_VISIBLE_DEVICES=9
+export CUDA_VISIBLE_DEVICES=4
 
 MODEL="urfm"
 HEAD="upsampler"
