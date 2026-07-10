@@ -3,12 +3,7 @@
 import pytest
 import torch
 
-from ultrabench.training.losses import DiceCELoss, MonaiDiceCELoss
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+from ultrabench.training.losses import DiceCELoss
 
 
 @pytest.fixture
@@ -29,15 +24,11 @@ def multiclass_inputs() -> tuple[torch.Tensor, torch.Tensor]:
     return pred, target
 
 
-# ---------------------------------------------------------------------------
-# DiceCELoss
-# ---------------------------------------------------------------------------
-
-
 class TestDiceCELoss:
     def test_binary_output_is_scalar_float(
         self, binary_inputs: tuple[torch.Tensor, torch.Tensor]
     ) -> None:
+        pytest.importorskip("monai", reason="monai not installed")
         pred, target = binary_inputs
         loss = DiceCELoss()
         out = loss(pred, target)
@@ -47,55 +38,9 @@ class TestDiceCELoss:
     def test_multiclass_output_is_scalar_float(
         self, multiclass_inputs: tuple[torch.Tensor, torch.Tensor]
     ) -> None:
+        pytest.importorskip("monai", reason="monai not installed")
         pred, target = multiclass_inputs
         loss = DiceCELoss()
         out = loss(pred, target)
         assert out.shape == torch.Size([])
         assert out.dtype == torch.float32
-
-
-# ---------------------------------------------------------------------------
-# MonaiDiceCELoss
-# ---------------------------------------------------------------------------
-
-
-class TestMonaiDiceCELoss:
-    def test_binary_output_is_scalar_float(
-        self, binary_inputs: tuple[torch.Tensor, torch.Tensor]
-    ) -> None:
-        pytest.importorskip("monai", reason="monai not installed")
-        pred, target = binary_inputs
-        loss = MonaiDiceCELoss()
-        out = loss(pred, target)
-        assert out.shape == torch.Size([])
-        assert out.dtype == torch.float32
-
-    def test_multiclass_output_is_scalar_float(
-        self, multiclass_inputs: tuple[torch.Tensor, torch.Tensor]
-    ) -> None:
-        pytest.importorskip("monai", reason="monai not installed")
-        pred, target = multiclass_inputs
-        loss = MonaiDiceCELoss()
-        out = loss(pred, target)
-        assert out.shape == torch.Size([])
-        assert out.dtype == torch.float32
-
-    def test_binary_matches_custom_loss(
-        self, binary_inputs: tuple[torch.Tensor, torch.Tensor]
-    ) -> None:
-        pytest.importorskip("monai", reason="monai not installed")
-        pred, target = binary_inputs
-        custom = DiceCELoss()
-        monai_loss = MonaiDiceCELoss()
-        assert torch.allclose(custom(pred, target), monai_loss(pred, target), atol=1e-3)
-
-    def test_multiclass_matches_custom_loss(
-        self, multiclass_inputs: tuple[torch.Tensor, torch.Tensor]
-    ) -> None:
-        pytest.importorskip("monai", reason="monai not installed")
-        pred, target = multiclass_inputs
-        custom = DiceCELoss()
-        monai_loss = MonaiDiceCELoss()
-        assert torch.allclose(
-            custom(pred, target), monai_loss(pred, target), atol=1e-3
-        )
