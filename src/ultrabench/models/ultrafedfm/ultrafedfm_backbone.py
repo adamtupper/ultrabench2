@@ -40,8 +40,8 @@ class UltraFedFMBackbone(Backbone):
 
     The encoder is a ViT pre-trained with federated, attention-guided masked
     image modelling on multi-center ultrasound data. Three variants are
-    supported: base (ViT-B/16), large (ViT-L/16, the released default), and
-    huge (ViT-H/14).
+    supported: base (ViT-B/16), large (ViT-L/16), and huge (ViT-H/14). The
+    released UltraFedFM checkpoint is the base (ViT-B/16) variant.
 
     Checkpoint format: ``{"model": state_dict}`` containing the full MAE
     encoder+decoder state. Decoder keys are unexpected when loading into the
@@ -130,12 +130,12 @@ class UltraFedFMBackbone(Backbone):
         """
         path = Path(self._checkpoint_path)
         if not path.exists():
-            raise FileNotFoundError(
-                f"Could not find UltraFedFM weights at: {path}"
-            )
+            raise FileNotFoundError(f"Could not find UltraFedFM weights at: {path}")
 
         ckpt = torch.load(path, map_location="cpu", weights_only=False)
-        state_dict = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+        state_dict = (
+            ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+        )
 
         msg = self._encoder.load_state_dict(state_dict, strict=False)
 
