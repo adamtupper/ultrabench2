@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=segmentation-urfm
+#SBATCH --job-name=segmentation-urfm-b
 #SBATCH --nodes=1
 #SBATCH --mem=15G
 #SBATCH --cpus-per-task=4
@@ -7,10 +7,10 @@
 #SBATCH --time=2:00:00
 #SBATCH --array=0-59%1
 #
-# Run downstream segmentation evaluation for URFM. Launches individual
+# Run downstream segmentation evaluation for URFM Base. Launches individual
 # jobs for each task, evaluation method, and seed combo.
 #
-# Usage: sbatch scripts/slurm/run_segmentation_urfm.sh
+# Usage: sbatch scripts/slurm/run_segmentation_urfm_base.sh
 
 set -e
 
@@ -45,7 +45,7 @@ cd $SLURM_TMPDIR
 read -r SEED METHOD TASK <<< "${combos[$SLURM_ARRAY_TASK_ID]}"
 CHECKPOINT_DIR="$project/models/ultrabench"
 OUTPUT_DIR="$scratch/results/ultrabench"
-MODEL="urfm"
+MODEL="urfm_base"
 HEAD="upsampler"
 BATCH_SIZE=32
 ACCUM_GRAD=1

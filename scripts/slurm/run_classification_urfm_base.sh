@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=classification-urfm
+#SBATCH --job-name=classification-urfm-b
 #SBATCH --nodes=1
 #SBATCH --mem=15G
 #SBATCH --cpus-per-task=4
@@ -7,10 +7,10 @@
 #SBATCH --time=2:00:00
 #SBATCH --array=0-71%1
 #
-# Run downstream classification evaluation for URFM. Launches individual
+# Run downstream classification evaluation for URFM Base. Launches individual
 # jobs for each task, evaluation method, and seed combo.
 #
-# Usage: sbatch scripts/slurm/run_classification_urfm.sh
+# Usage: sbatch scripts/slurm/run_classification_urfm_base.sh
 
 set -e
 
@@ -47,7 +47,7 @@ cd $SLURM_TMPDIR
 read -r SEED METHOD TASK <<< "${combos[$SLURM_ARRAY_TASK_ID]}"
 CHECKPOINT_DIR="$project/models/ultrabench"
 OUTPUT_DIR="$scratch/results/ultrabench"
-MODEL="urfm"
+MODEL="urfm_base"
 HEAD="linear_classifier"
 BATCH_SIZE=32
 ACCUM_GRAD=1
