@@ -5,7 +5,7 @@ git config --global core.editor "nano"
 git config --global sequence.editor "nano"
 
 # Install non-Python dependencies
-sudo apt-get update && sudo apt-get install -y unrar
+sudo apt-get update && sudo apt-get install -y unrar nvtop
 
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
