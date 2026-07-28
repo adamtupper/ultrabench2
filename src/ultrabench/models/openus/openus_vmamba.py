@@ -487,19 +487,61 @@ def cross_merge_fn(
 # ============================================================
 
 
+# Number of sequence positions solved in parallel per scan chunk. Larger is
+# faster but less stable: exp(cumsum(delta * A)) decays quickly for negative A,
+# and the recurrence divides by it. 64 is the value upstream validates against.
+_SCAN_CHUNK_SIZE = 64
+
+# Floor for the within-chunk decay exponent A * cumsum(delta). Without it a
+# steep enough decay underflows exp() to zero and the division below yields
+# inf/NaN. exp(-60) is ~9e-27, so the reciprocal stays far inside float32
+# range. Measured on this model the exponent reaches only ~7 over a 64-step
+# chunk, so the clamp is inactive in practice and the result is unchanged; it
+# exists so pathological inputs degrade in accuracy rather than produce NaN.
+_SCAN_MIN_EXPONENT = -60.0
+
+
 def _selective_scan_torch(
-    u,
-    delta,
-    A,
-    B,
-    C,
-    D=None,
-    delta_bias=None,
-    delta_softplus=True,
-    oflex=True,
+    u: torch.Tensor,
+    delta: torch.Tensor,
+    A: torch.Tensor,
+    B: torch.Tensor,
+    C: torch.Tensor,
+    D: torch.Tensor | None = None,
+    delta_bias: torch.Tensor | None = None,
+    delta_softplus: bool = True,
+    oflex: bool = True,
     *args,
     **kwargs,
-):
+) -> torch.Tensor:
+    """Run the selective scan in pure PyTorch, solving chunks in parallel.
+
+    Used whenever none of VMamba's selective-scan CUDA extensions are
+    importable, which is the normal case here since they are not published on
+    PyPI and must be compiled from source. A naive implementation would step
+    the recurrence one sequence position at a time in Python; chunking it cuts
+    the iteration count by `_SCAN_CHUNK_SIZE` and solves each chunk with
+    vectorised cumulative sums. Ported from upstream VMamba's
+    `selective_scan_easy` (kernels/selective_scan/test_selective_scan_easy.py,
+    also published as MzeroMiko/mamba-mini).
+
+    Args:
+        u: Input sequence, shape (batch, groups * dim, seqlen).
+        delta: Timestep sizes, same shape as u. Expected to be positive, which
+            delta_softplus guarantees; negative timesteps make the state grow
+            exponentially and overflow.
+        A: State transition matrix, shape (groups * dim, state).
+        B: Input projection, shape (batch, groups, state, seqlen).
+        C: Output projection, shape (batch, groups, state, seqlen).
+        D: Optional skip-connection weights, shape (groups * dim,).
+        delta_bias: Optional bias added to delta, shape (groups * dim,).
+        delta_softplus: Whether to apply softplus to delta after the bias.
+        oflex: If True, return the float32 result of the scan. If False, cast
+            the result back to the dtype of u.
+
+    Returns:
+        The scan output, shape (batch, groups * dim, seqlen).
+    """
     dtype_in = u.dtype
     Batch, K, N, L = B.shape
     KCdim = u.shape[1]
@@ -509,17 +551,31 @@ def _selective_scan_torch(
     if delta_softplus:
         delta = F.softplus(delta)
     u, delta, A, B, C = u.float(), delta.float(), A.float(), B.float(), C.float()
-    B = B.view(Batch, K, 1, N, L).repeat(1, 1, Cdim, 1, 1).view(Batch, KCdim, N, L)
-    C = C.view(Batch, K, 1, N, L).repeat(1, 1, Cdim, 1, 1).view(Batch, KCdim, N, L)
-    deltaA = torch.exp(torch.einsum("bdl,dn->bdln", delta, A))
-    deltaB_u = torch.einsum("bdl,bdnl,bdl->bdln", delta, B, u)
-    x = A.new_zeros((Batch, KCdim, N))
+
+    # (batch, groups * dim, seqlen) -> (seqlen, batch, groups, dim), so the
+    # scan runs along dim 0 and the group dim stays separate (no need to
+    # expand B and C up to the full groups * dim width).
+    us = u.view(Batch, K, Cdim, L).permute(3, 0, 1, 2)
+    dts = delta.view(Batch, K, Cdim, L).permute(3, 0, 1, 2)
+    As = A.view(K, Cdim, N)
+    Bs = B.permute(3, 0, 1, 2)
+    Cs = C.permute(3, 0, 1, 2)
+
     ys = []
-    for i in range(L):
-        x = deltaA[:, :, i] * x + deltaB_u[:, :, i]
-        y = torch.einsum("bdn,bdn->bd", x, C[:, :, :, i])
-        ys.append(y)
-    y = torch.stack(ys, dim=2)
+    hprefix = us.new_zeros((Batch, K, Cdim, N))
+    for start in range(0, L, _SCAN_CHUNK_SIZE):
+        chunk = slice(start, start + _SCAN_CHUNK_SIZE)
+        dts_chunk = dts[chunk]
+        # With ats = exp(A * cumsum(dt)):
+        #   h = ats * (h_prefix + cumsum(dt * B * u / ats))
+        exponent = torch.einsum("gdn,lbgd->lbgdn", As, dts_chunk.cumsum(dim=0))
+        ats = exponent.clamp(min=_SCAN_MIN_EXPONENT).exp()
+        dt_b_u = torch.einsum("lbgd,lbgn->lbgdn", dts_chunk * us[chunk], Bs[chunk])
+        hs = ats * (dt_b_u / ats).cumsum(dim=0) + ats * hprefix.unsqueeze(0)
+        ys.append(torch.einsum("lbgn,lbgdn->lbgd", Cs[chunk], hs))
+        hprefix = hs[-1]
+
+    y = torch.cat(ys, dim=0).permute(1, 2, 3, 0).reshape(Batch, KCdim, L)
     out = y if D is None else y + u * D.unsqueeze(-1)
     return out if oflex else out.to(dtype=dtype_in)
 
