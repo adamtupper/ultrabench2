@@ -49,8 +49,8 @@ CHECKPOINT_DIR="$project/models/ultrabench"
 OUTPUT_DIR="$scratch/results/ultrabench"
 MODEL="openus"
 HEAD="linear_classifier"
-BATCH_SIZE=32
-ACCUM_GRAD=1
+BATCH_SIZE=16
+ACCUM_GRAD=2
 
 python ultrabench2/src/ultrabench/training/main_launch.py \
     system.output_dir=${OUTPUT_DIR} \
