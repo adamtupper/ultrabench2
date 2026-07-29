@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=classification-urfm-large
 #SBATCH --nodes=1
-#SBATCH --mem=15G
+#SBATCH --mem=31G
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
