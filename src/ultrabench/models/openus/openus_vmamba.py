@@ -13,16 +13,17 @@ Usage:
 import contextlib
 import math
 import warnings
-import numpy as np
 from collections import OrderedDict
 from functools import partial
 from typing import Any, Callable, Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, trunc_normal_, to_2tuple
+from kernels import get_kernel
+from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 DropPath.__repr__ = lambda self: f"timm.DropPath({self.drop_prob})"
 
@@ -57,6 +58,9 @@ try:
     from analyze.attnmap import AttnMamba as _AttnMamba
 except Exception:
     _AttnMamba = None
+
+kernel_module = get_kernel("kernels-community/mamba-ssm", version=1)
+selective_scan_fn = kernel_module.selective_scan_fn
 
 
 # ============================================================
@@ -595,25 +599,26 @@ class _SelectiveScanCuda(torch.autograd.Function):
         return du, ddelta, dA, dB, dC, dD, ddb, None, None, None
 
 
-def selective_scan_fn(
-    u,
-    delta,
-    A,
-    B,
-    C,
-    D=None,
-    delta_bias=None,
-    delta_softplus=True,
-    oflex=True,
-    backend=None,
-):
-    WITH_CUDA = _WITH_SS_OFLEX or _WITH_SS_CORE or _WITH_SS_MAMBA
-    fn = (
-        _selective_scan_torch
-        if (backend == "torch" or not WITH_CUDA)
-        else _SelectiveScanCuda.apply
-    )
-    return fn(u, delta, A, B, C, D, delta_bias, delta_softplus, oflex, backend)
+# def selective_scan_fn(
+#     u,
+#     delta,
+#     A,
+#     B,
+#     C,
+#     D=None,
+#     delta_bias=None,
+#     delta_softplus=True,
+#     oflex=True,
+#     backend=None,
+# ):
+#     WITH_CUDA = _WITH_SS_OFLEX or _WITH_SS_CORE or _WITH_SS_MAMBA
+#     fn = (
+#         _selective_scan_torch
+#         if (backend == "torch" or not WITH_CUDA)
+#         else _SelectiveScanCuda.apply
+#     )
+#     return fn(u, delta, A, B, C, D, delta_bias, delta_softplus, oflex,
+# backend)
 
 
 # ============================================================
