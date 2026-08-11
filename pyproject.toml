@@ -50,6 +50,7 @@ dev = [
     "ty>=0.0.39,<0.0.40",
     "zenodo-get >=3.0.0",
     "opencv-python-headless >=4.10.0.84",
+    "adjusttext>=1.4.0,<2.0.0",
 ]
 training = [
     "albumentations==2.0.0",
@@ -103,3 +104,6 @@ known-first-party = ["ultrabench"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 79
+
+[tool.kernels.dependencies]
+"kernels-community/mamba-ssm" = 1
