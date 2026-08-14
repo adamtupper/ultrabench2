@@ -21,9 +21,9 @@ TASKS=(
     aul_mass_segmentation
     busbra_segmentation
     camus_segmentation
-    mmotu_segmentation
-    open_kidney_capsule_segmentation
-    open_kidney_regions_segmentation
+    # mmotu_segmentation
+    # open_kidney_capsule_segmentation
+    # open_kidney_regions_segmentation
     psfhs_segmentation
     stmus_segmentation
     tn3k_segmentation
