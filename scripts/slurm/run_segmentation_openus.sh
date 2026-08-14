@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
-#SBATCH --array=0-59%1
+#SBATCH --array=0-41%1
 #
 # Run downstream segmentation evaluation for OpenUS. Launches individual
 # jobs for each task, evaluation method, and seed combo.
