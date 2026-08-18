@@ -371,8 +371,16 @@ def process_covid_blues(
     dataset.save_to_disk(str(output_path))
 
     generate_classification_ground_truth_from_records(
-        [{"filename": r["filename"], "label": r["covid19"]} for r in test_records],
+        [
+            {
+                "filename": r["filename"],
+                "label": r["covid19"],
+                "patient": r["patient"],
+            }
+            for r in test_records
+        ],
         output_path / f"test.{size}" / "ground_truth_classification.csv",
+        sequence_keys=["patient"],
     )
 
     save_version_info(str(output_path), __version__)

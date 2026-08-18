@@ -426,10 +426,16 @@ def process_camus(
     )
     generate_classification_ground_truth_from_records(
         [
-            {"filename": r["filename"], "label": r["image_quality"]}
+            {
+                "filename": r["filename"],
+                "label": r["image_quality"],
+                "patient": r["patient"],
+                "view": r["view"],
+            }
             for r in test_records
         ],
         classification_gt_path,
+        sequence_keys=["patient", "view"],
     )
     generate_segmentation_ground_truth_from_records(
         test_records,

@@ -265,6 +265,7 @@ def process_masld(
     generate_classification_ground_truth_from_records(
         test_records,
         output_path / f"test.{size}" / "ground_truth_classification.csv",
+        sequence_keys=["patient"],
     )
 
     save_version_info(str(output_path), __version__)
