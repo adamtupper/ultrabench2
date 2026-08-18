@@ -382,7 +382,14 @@ class UltraBenchModule(pl.LightningModule):
         Returns:
             Dict with the configured optimizer(s) an LR scheduler(s).
         """
-        optimizer = instantiate(self.optimizer_cfg, params=self.parameters())
+        # Exclude the backbone so its params are never registered with the
+        # optimizer while frozen — otherwise BackboneFinetuningSteps can't
+        # later give it its own param group(s) (Lightning's BaseFinetuning
+        # skips adding params that already belong to an existing group).
+        head_params = [
+            p for n, p in self.named_parameters() if not n.startswith("backbone.")
+        ]
+        optimizer = instantiate(self.optimizer_cfg, params=head_params)
         scheduler = instantiate(self.scheduler_cfg, optimizer=optimizer)
 
         return {
@@ -603,7 +610,10 @@ class DownstreamPipeline:
             ),
             BackboneFinetuningSteps(
                 unfreeze_backbone_at_step=unfreeze_backbone_at_step,
-                backbone_initial_ratio_lr=cfg.optimization.backbone_initial_ratio_lr,  # ty:ignore[unresolved-attribute]
+                backbone_max_lr_ratio=cfg.optimization.backbone_max_lr_ratio,  # ty:ignore[unresolved-attribute]
+                backbone_warmup_steps=cfg.optimization.backbone_warmup_steps,  # ty:ignore[unresolved-attribute]
+                backbone_layer_decay=cfg.optimization.backbone_layer_decay,  # ty:ignore[unresolved-attribute]
+                backbone_num_layer_groups=cfg.optimization.backbone_num_layer_groups,  # ty:ignore[unresolved-attribute]
             ),
         ]
         if cfg.optimization.patience is not None:  # ty:ignore[unresolved-attribute]
