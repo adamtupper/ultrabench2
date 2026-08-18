@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
-#SBATCH --array=0-35%1
+#SBATCH --array=0-65%1
 #
 # Run downstream classification evaluation for DINOv3 ViT-B/16. Launches individual
 # jobs for each task, evaluation method, and seed combo.
@@ -17,17 +17,16 @@ set -e
 SEEDS=(42 43 44)
 METHODS=(head_only full_finetuning)
 TASKS=(
-    # aul_mass_classification
+    aul_mass_classification
     busbra_histology_classification
     busbra_pathology_classification
-    # butterfly_classification
-    # camus_classification
-    # covid_blues_classification
+    camus_classification
+    covid_blues_classification
     fetal_planes_brain_plane_classification
     fetal_planes_plane_classification
     gbcu_classification
-    # masld_classification
-    # mmotu_classification
+    masld_classification
+    mmotu_classification
     tn3k_classification
 )
 

@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=segmentation-urfm-large
 #SBATCH --nodes=1
-#SBATCH --mem=15G
+#SBATCH --mem=30G
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
-#SBATCH --array=0-41%1
+#SBATCH --array=0-59%1
 #
 # Run downstream segmentation evaluation for URFM Large. Launches individual
 # jobs for each task, evaluation method, and seed combo.
@@ -21,9 +21,9 @@ TASKS=(
     aul_mass_segmentation
     busbra_segmentation
     camus_segmentation
-    # mmotu_segmentation
-    # open_kidney_capsule_segmentation
-    # open_kidney_regions_segmentation
+    mmotu_segmentation
+    open_kidney_capsule_segmentation
+    open_kidney_regions_segmentation
     psfhs_segmentation
     stmus_segmentation
     tn3k_segmentation
