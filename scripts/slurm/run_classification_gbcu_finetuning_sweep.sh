@@ -46,9 +46,12 @@ TASK="gbcu_classification"
 BATCH_SIZE=32
 ACCUM_GRAD=1
 
+RUN_DIR="${OUTPUT_DIR}/${MODEL}/${TASK}/seed_${SEED}/method_${METHOD}_lr_${LR}_wd_${WEIGHT_DECAY}_aug_${AUGMENTATION}"
+
 python ultrabench2/src/ultrabench/training/main_launch.py \
     system.output_dir=${OUTPUT_DIR} \
     system.checkpoint_dir=${CHECKPOINT_DIR} \
+    hydra.run.dir="${RUN_DIR}" \
     system.save_last_checkpoint=false \
     system.data_loader_workers=${SLURM_CPUS_PER_TASK} \
     system.enable_progress_bar=false \
