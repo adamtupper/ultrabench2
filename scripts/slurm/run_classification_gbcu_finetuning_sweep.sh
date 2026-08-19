@@ -5,22 +5,23 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
-#SBATCH --array=0-23%1
+#SBATCH --array=0-5%1
 #
-# Sweep learning rate, weight decay, and augmentation strategy for
-# head-only vs. full fine-tuning on GBCU classification with UltraFedFM, to
-# validate the backbone fine-tuning LR fix (capped max LR + linear warmup +
-# per-layer decay). Launches individual jobs for each combo.
+# Sweep weight decay and augmentation strategy for full fine-tuning on GBCU
+# classification with UltraFedFM, to validate a lower backbone_max_lr_ratio
+# (capped max LR + linear warmup + per-layer decay). Launches individual
+# jobs for each combo.
 #
 # Usage: sbatch scripts/slurm/run_classification_gbcu_finetuning_sweep.sh
 
 set -e
 
 SEED=42
-METHODS=(head_only full_finetuning)
-LRS=(1e-3 1e-4)
+METHODS=(full_finetuning)
+LRS=(1e-3)
 WEIGHT_DECAYS=(1e-2 5e-2 1e-1)
 AUGMENTATIONS=(null general)
+BACKBONE_MAX_LR_RATIO=0.01
 
 declare -a combos
 for method in "${METHODS[@]}"; do
@@ -46,7 +47,7 @@ TASK="gbcu_classification"
 BATCH_SIZE=32
 ACCUM_GRAD=1
 
-RUN_DIR="${OUTPUT_DIR}/${MODEL}/${TASK}/seed_${SEED}/method_${METHOD}_lr_${LR}_wd_${WEIGHT_DECAY}_aug_${AUGMENTATION}"
+RUN_DIR="${OUTPUT_DIR}/${MODEL}/${TASK}/seed_${SEED}/method_${METHOD}_lr_${LR}_wd_${WEIGHT_DECAY}_aug_${AUGMENTATION}_backbonemaxlrratio_${BACKBONE_MAX_LR_RATIO}"
 
 python ultrabench2/src/ultrabench/training/main_launch.py \
     system.output_dir=${OUTPUT_DIR} \
@@ -65,4 +66,5 @@ python ultrabench2/src/ultrabench/training/main_launch.py \
     optimization.seed=${SEED} \
     optimization.patience=null \
     optimization.batch_size=${BATCH_SIZE} \
-    optimization.accum_grad=${ACCUM_GRAD}
+    optimization.accum_grad=${ACCUM_GRAD} \
+    optimization.backbone_max_lr_ratio=${BACKBONE_MAX_LR_RATIO}
