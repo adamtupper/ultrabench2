@@ -21,6 +21,7 @@ optimization:
   backbone_warmup_steps: 1000
   backbone_layer_decay: 0.9
   backbone_num_layer_groups: 4
+  train_bn: false
   val_check_interval: 100 # optimizer steps
   patience: 10 # validation checks
   seed: 42 # Single value - sweep with -m optimization.seed=42,43,44,45,46

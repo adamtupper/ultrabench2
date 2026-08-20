@@ -1,12 +1,13 @@
 """Step-based backbone finetuning callback."""
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 import lightning.pytorch as pl
+from lightning.fabric.utilities.exceptions import MisconfigurationException
 from lightning.pytorch.callbacks import BaseFinetuning
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
 from torch.nn import Module, Parameter
+from torch.nn.modules.batchnorm import _BatchNorm
 from torch.optim import Optimizer
 from typing_extensions import override
 
@@ -25,6 +26,13 @@ class BackboneFinetuningSteps(BaseFinetuning):
     head's current LR, scaled by a per-group layer-decay factor and a
     linear warmup — with no backbone-specific customization required.
 
+    This callback also owns the backbone's train/eval mode. Lightning does
+    not call ``LightningModule.train()`` during ``fit`` (its evaluation loop
+    captures and restores submodule modes directly), so the mode is
+    re-asserted at every training batch: the backbone stays in eval mode
+    while frozen and switches to train mode once unfrozen. Batch
+    Normalization layers follow ``train_bn`` instead of the frozen state.
+
     Args:
         unfreeze_backbone_at_step: Global step at which the backbone will be
             unfrozen.
@@ -42,7 +50,13 @@ class BackboneFinetuningSteps(BaseFinetuning):
             split the backbone into, ordered shallowest to deepest. Grouping
             is based purely on parameter registration order, so it applies
             to any backbone architecture without customization.
-        train_bn: Whether to make Batch Normalization trainable.
+        train_bn: Whether to train Batch Normalization layers. When False
+            (the default) BN layers are fully frozen for the whole run —
+            kept in eval mode, with their affine parameters and running
+            statistics never updated, even after the backbone unfreezes.
+            When True they stay in train mode while the backbone is frozen
+            (so their statistics track the data) and are trained as part of
+            their layer group once it unfreezes.
         verbose: Display current learning rate for model and backbone.
         rounding: Precision for displaying learning rate.
     """
@@ -110,7 +124,21 @@ class BackboneFinetuningSteps(BaseFinetuning):
 
     @override
     def freeze_before_training(self, pl_module: "pl.LightningModule") -> None:
-        self.freeze(pl_module.backbone)
+        backbone = cast(Module, pl_module.backbone)
+        self.freeze(backbone, train_bn=self.train_bn)
+        self._set_backbone_mode(backbone)
+
+    def _set_backbone_mode(self, backbone: Module) -> None:
+        """Match the backbone's train/eval mode to its frozen state.
+
+        Args:
+            backbone: The backbone module to set the mode on.
+        """
+        backbone.train(self._unfrozen)
+        # Module.train() recurses, so BN layers are re-set afterwards.
+        for module in backbone.modules():
+            if isinstance(module, _BatchNorm):
+                module.train(self.train_bn)
 
     @override
     def finetune_function(
@@ -155,6 +183,13 @@ class BackboneFinetuningSteps(BaseFinetuning):
             backbone: The backbone module to unfreeze.
         """
         self.make_trainable(backbone)
+        if not self.train_bn:
+            # make_trainable() re-enables requires_grad and
+            # track_running_stats on BN layers; filter_params() then skips
+            # them, which would leave them accumulating unused gradients.
+            for module in backbone.modules():
+                if isinstance(module, _BatchNorm):
+                    self.freeze_module(module)
         params = list(
             self.filter_params(backbone, train_bn=self.train_bn, requires_grad=True)
         )
@@ -207,15 +242,11 @@ class BackboneFinetuningSteps(BaseFinetuning):
             batch_idx: The index of the current batch.
         """
         optimizer = trainer.optimizers[0]
+        # on_fit_start() already validated that this is a nn.Module.
+        backbone = pl_module.backbone
+        assert isinstance(backbone, Module)
 
-        if not self._unfrozen:
-            if trainer.global_step < self.unfreeze_step:
-                return
-
-            # on_fit_start() already validated that this is a nn.Module.
-            backbone = pl_module.backbone
-            assert isinstance(backbone, Module)
-
+        if not self._unfrozen and trainer.global_step >= self.unfreeze_step:
             num_param_groups = len(optimizer.param_groups)
             self._add_backbone_param_groups(optimizer, backbone)
             self._unfrozen = True
@@ -225,6 +256,14 @@ class BackboneFinetuningSteps(BaseFinetuning):
             # num_param_groups == len(current) and be a no-op — the backbone
             # groups would never be recorded without this.
             self._store(pl_module, 0, num_param_groups, optimizer.param_groups)
+
+        # Re-assert every batch: Lightning's evaluation loop restores
+        # submodule modes after each validation run, and
+        # freeze_before_training() only runs once at setup.
+        self._set_backbone_mode(backbone)
+
+        if not self._unfrozen:
+            return
 
         self._update_backbone_lrs(trainer, optimizer)
 

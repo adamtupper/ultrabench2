@@ -54,6 +54,38 @@ def _make_module_and_optimizer(
     return module, optimizer
 
 
+def _make_bn_module_and_optimizer(
+    lr: float = 1e-3,
+) -> tuple[MagicMock, torch.optim.SGD]:
+    """Return a (module, optimizer) pair whose backbone contains BatchNorm.
+
+    Mirrors _make_module_and_optimizer, but the backbone also holds a
+    BatchNorm and a Dropout layer so train_bn and train/eval mode handling
+    can be exercised.
+    """
+    backbone = nn.Sequential(
+        nn.Linear(4, 4),
+        nn.BatchNorm1d(4),
+        nn.Dropout(0.5),
+        nn.Linear(4, 2),
+    )
+    head = nn.Linear(4, 2)
+
+    module = MagicMock()
+    module.backbone = backbone
+    module.named_parameters.return_value = list(head.named_parameters()) + [
+        (f"backbone.{n}", p) for n, p in backbone.named_parameters()
+    ]
+
+    optimizer = torch.optim.SGD(head.parameters(), lr=lr)
+    return module, optimizer
+
+
+def _bn_layer(backbone: nn.Module) -> nn.BatchNorm1d:
+    """Return the single BatchNorm layer of a helper backbone."""
+    return next(m for m in backbone.modules() if isinstance(m, nn.BatchNorm1d))
+
+
 def _make_optimizer(lr: float = 1e-3) -> torch.optim.SGD:
     """Return an SGD optimizer over a single dummy parameter group."""
     param = nn.Parameter(torch.zeros(1))
@@ -145,6 +177,36 @@ class TestFreezeBeforeTraining:
         cb.freeze_before_training(module)
         # head_param was never touched
         assert head_param.requires_grad
+
+    def test_backbone_in_eval_mode_after_freeze(self):
+        """The frozen backbone is switched to eval mode."""
+        cb = BackboneFinetuningSteps()
+        module, _ = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+        assert not module.backbone.training
+
+    def test_bn_fully_frozen_when_train_bn_false(self):
+        """train_bn=False freezes BN params, stats and mode."""
+        cb = BackboneFinetuningSteps(train_bn=False)
+        module, _ = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        bn = _bn_layer(module.backbone)
+        assert not bn.training
+        assert not bn.track_running_stats
+        assert all(not p.requires_grad for p in bn.parameters())
+
+    def test_bn_left_in_train_mode_when_train_bn_true(self):
+        """train_bn=True keeps BN layers training while the rest is frozen."""
+        cb = BackboneFinetuningSteps(train_bn=True)
+        module, _ = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        bn = _bn_layer(module.backbone)
+        assert not module.backbone.training  # backbone itself is frozen
+        assert bn.training
+        assert bn.track_running_stats
+        assert all(p.requires_grad for p in bn.parameters())
 
 
 # ---------------------------------------------------------------------------
@@ -414,6 +476,101 @@ class TestOnTrainBatchStart:
 
 
 # ---------------------------------------------------------------------------
+# TestBackboneTrainEvalMode
+# ---------------------------------------------------------------------------
+
+
+class TestBackboneTrainEvalMode:
+    """Tests that the callback owns the backbone's train/eval mode."""
+
+    def _run_batch_start(
+        self,
+        cb: BackboneFinetuningSteps,
+        global_step: int,
+        module: MagicMock,
+        optimizer: torch.optim.Optimizer,
+    ) -> None:
+        """Call on_train_batch_start with a mock trainer."""
+        trainer = _make_trainer(global_step=global_step)
+        trainer.optimizers = [optimizer]
+        cb.on_train_batch_start(trainer, module, batch={}, batch_idx=0)
+
+    def test_backbone_kept_in_eval_before_unfreeze(self):
+        """The backbone stays in eval mode while frozen."""
+        cb = BackboneFinetuningSteps(unfreeze_backbone_at_step=100)
+        module, optimizer = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        self._run_batch_start(cb, global_step=50, module=module, optimizer=optimizer)
+        assert not module.backbone.training
+
+    def test_mode_reasserted_after_external_change(self):
+        """Eval mode is restored after something else flips it back on.
+
+        Lightning's evaluation loop captures and restores submodule modes
+        directly, so the callback must re-assert the mode every batch.
+        """
+        cb = BackboneFinetuningSteps(unfreeze_backbone_at_step=100)
+        module, optimizer = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        module.backbone.train()  # simulate _ModuleMode.restore
+        self._run_batch_start(cb, global_step=51, module=module, optimizer=optimizer)
+        assert not module.backbone.training
+
+    def test_backbone_in_train_mode_after_unfreeze(self):
+        """The backbone switches to train mode once unfrozen."""
+        cb = BackboneFinetuningSteps(
+            unfreeze_backbone_at_step=100, backbone_num_layer_groups=2
+        )
+        module, optimizer = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        self._run_batch_start(cb, global_step=100, module=module, optimizer=optimizer)
+        assert module.backbone.training
+
+    def test_bn_stays_frozen_after_unfreeze_when_train_bn_false(self):
+        """train_bn=False keeps BN frozen even after the backbone unfreezes."""
+        cb = BackboneFinetuningSteps(
+            unfreeze_backbone_at_step=100,
+            backbone_num_layer_groups=2,
+            train_bn=False,
+        )
+        module, optimizer = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        self._run_batch_start(cb, global_step=100, module=module, optimizer=optimizer)
+
+        bn = _bn_layer(module.backbone)
+        assert module.backbone.training
+        assert not bn.training
+        assert not bn.track_running_stats
+        assert all(not p.requires_grad for p in bn.parameters())
+
+        grouped = {id(p) for group in optimizer.param_groups for p in group["params"]}
+        assert all(id(p) not in grouped for p in bn.parameters())
+
+    def test_bn_trained_after_unfreeze_when_train_bn_true(self):
+        """train_bn=True trains BN alongside the rest of the backbone."""
+        cb = BackboneFinetuningSteps(
+            unfreeze_backbone_at_step=100,
+            backbone_num_layer_groups=2,
+            train_bn=True,
+        )
+        module, optimizer = _make_bn_module_and_optimizer()
+        cb.freeze_before_training(module)
+
+        self._run_batch_start(cb, global_step=100, module=module, optimizer=optimizer)
+
+        bn = _bn_layer(module.backbone)
+        assert bn.training
+        assert bn.track_running_stats
+
+        grouped = {id(p) for group in optimizer.param_groups for p in group["params"]}
+        assert all(id(p) in grouped for p in bn.parameters())
+
+
+# ---------------------------------------------------------------------------
 # TestStateDict
 # ---------------------------------------------------------------------------
 
@@ -498,46 +655,6 @@ class TestBackboneProperty:
         """UltraBenchModule.backbone is an nn.Module instance."""
         module, _ = self._make_ultrabench_module()
         assert isinstance(module.backbone, nn.Module)
-
-    def test_train_keeps_frozen_backbone_in_eval(self):
-        """train() keeps backbone in eval mode when its params are frozen."""
-        from ultrabench.training.setup_ptl import UltraBenchModule
-
-        backbone = nn.Linear(4, 4)
-        for p in backbone.parameters():
-            p.requires_grad = False
-
-        module = UltraBenchModule(
-            backbone=backbone,
-            head=nn.Linear(4, 2),
-            criterion=nn.CrossEntropyLoss(),
-            optimizer_cfg=MagicMock(),
-            scheduler_cfg=MagicMock(),
-            task_type="classification",
-            output_dir="/tmp",
-            num_classes=2,
-        )
-        module.train()
-        assert not backbone.training
-
-    def test_train_does_not_suppress_unfrozen_backbone(self):
-        """train() doesn't override backbone mode when params are trainable."""
-        from ultrabench.training.setup_ptl import UltraBenchModule
-
-        backbone = nn.Linear(4, 4)  # requires_grad=True by default
-
-        module = UltraBenchModule(
-            backbone=backbone,
-            head=nn.Linear(4, 2),
-            criterion=nn.CrossEntropyLoss(),
-            optimizer_cfg=MagicMock(),
-            scheduler_cfg=MagicMock(),
-            task_type="classification",
-            output_dir="/tmp",
-            num_classes=2,
-        )
-        module.train()
-        assert backbone.training
 
 
 # ---------------------------------------------------------------------------

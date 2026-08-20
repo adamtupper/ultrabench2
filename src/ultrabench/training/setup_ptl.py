@@ -125,9 +125,10 @@ class UltraBenchModule(pl.LightningModule):
     """LightningModule wrapping a Backbone and a task head.
 
     Supports classification and segmentation. The backbone may be frozen
-    (probe) or unfrozen (full finetuning via BackboneFinetuningSteps
-    callback). When the backbone is frozen, its eval mode is preserved
-    across Lightning's train() calls via the train() override.
+    (probe) or unfrozen (full finetuning). The BackboneFinetuningSteps
+    callback owns the backbone's frozen state and its train/eval mode: it
+    keeps the backbone in eval mode while frozen and switches it to train
+    mode once unfrozen.
 
     Attributes:
         backbone: The pretrained encoder. Exposed as a direct attribute so
@@ -233,20 +234,6 @@ class UltraBenchModule(pl.LightningModule):
             return self.head(out.intermediate_features)
 
         return self.head(out.features)
-
-    def train(self, mode: bool = True) -> "UltraBenchModule":
-        """Keep the backbone in eval mode when all its parameters are frozen.
-
-        Args:
-            mode: Training mode flag passed through to all sub-modules.
-
-        Returns:
-            Self.
-        """
-        super().train(mode)
-        if mode and not any(p.requires_grad for p in self.backbone.parameters()):
-            self.backbone.eval()
-        return self
 
     # TRAINING
     def training_step(self, batch: Dict, batch_idx: int) -> torch.Tensor:
@@ -614,6 +601,7 @@ class DownstreamPipeline:
                 backbone_warmup_steps=cfg.optimization.backbone_warmup_steps,  # ty:ignore[unresolved-attribute]
                 backbone_layer_decay=cfg.optimization.backbone_layer_decay,  # ty:ignore[unresolved-attribute]
                 backbone_num_layer_groups=cfg.optimization.backbone_num_layer_groups,  # ty:ignore[unresolved-attribute]
+                train_bn=cfg.optimization.train_bn,  # ty:ignore[unresolved-attribute]
             ),
         ]
         if cfg.optimization.patience is not None:  # ty:ignore[unresolved-attribute]
