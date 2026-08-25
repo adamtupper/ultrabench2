@@ -2,7 +2,7 @@
 #SBATCH --job-name=segmentation-dinov3-convnext-base
 #SBATCH --nodes=1
 #SBATCH --mem=15G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=3
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=3:00:00
 #SBATCH --array=0-3

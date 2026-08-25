@@ -2,7 +2,7 @@
 #SBATCH --job-name=segmentation-samus
 #SBATCH --nodes=1
 #SBATCH --mem=15G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=3
 #SBATCH --gpus=h100_2g.20gb:1
 #SBATCH --time=7:00:00
 #SBATCH --array=0-3
