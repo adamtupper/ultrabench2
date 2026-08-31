@@ -25,17 +25,17 @@ EXPERIMENT="classification_usfmae"
 SEEDS=(42 43 44)
 METHODS=(head_only full_finetuning)
 TASKS=(
-    # aul_mass_classification
-    # busbra_histology_classification
-    # busbra_pathology_classification
+    aul_mass_classification
+    busbra_histology_classification
+    busbra_pathology_classification
     camus_classification
     covid_blues_classification
-    # fetal_planes_brain_plane_classification
-    # fetal_planes_plane_classification
-    # gbcu_classification
+    fetal_planes_brain_plane_classification
+    fetal_planes_plane_classification
+    gbcu_classification
     masld_classification
-    # mmotu_classification
-    # tn3k_classification
+    mmotu_classification
+    tn3k_classification
 )
 
 declare -a COMBOS
