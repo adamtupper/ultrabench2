@@ -47,6 +47,12 @@ for seed in "${SEEDS[@]}"; do
     done
 done
 
+# camus_classification never produced a head_only result for seeds 42-44, while
+# the rest of that grid is complete (see the 2026-09-06 results audit).
+for seed in 42 43 44; do
+    COMBOS+=("$seed head_only camus_classification")
+done
+
 MODEL="samus"
 HEAD="linear_classifier"
 BATCH_SIZE=8

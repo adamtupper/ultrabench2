@@ -22,7 +22,9 @@ set -e
 
 EXPERIMENT="classification_urfm_large"
 
-SEEDS=(45 46)
+# Seeds 45 and 46 are already complete for this model; seeds 42-44 are the
+# outstanding ones (see the 2026-09-06 results audit).
+SEEDS=(42 43 44)
 METHODS=(head_only full_finetuning)
 TASKS=(
     aul_mass_classification

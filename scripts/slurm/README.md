@@ -25,6 +25,19 @@ the successor jobs inherit it via `--chdir`.
 Resubmitting a script that is already part-way through is safe. The queue is the only state, so
 runs already recorded as finished are skipped.
 
+## Launching everything that is outstanding
+
+```shell
+scripts/slurm/launch_jobs.sh --dry-run
+scripts/slurm/launch_jobs.sh
+```
+
+Submits one job per run script that still has runs to do, skipping the models whose grid is
+already complete. The selection is a snapshot of an audit of the results directory, so re-audit
+before reusing it. A queue is built from the script's combos the first time it is created, so
+delete `$scratch/results/ultrabench/_queue/<experiment>` before relaunching a script whose combos
+have changed.
+
 ## Checking progress
 
 ```shell
