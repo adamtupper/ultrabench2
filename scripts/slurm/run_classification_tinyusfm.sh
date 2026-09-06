@@ -22,7 +22,7 @@ set -e
 
 EXPERIMENT="classification_tinyusfm"
 
-SEEDS=(42 43 44)
+SEEDS=(45 46)
 METHODS=(head_only full_finetuning)
 TASKS=(
     aul_mass_classification

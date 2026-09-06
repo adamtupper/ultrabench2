@@ -4,7 +4,7 @@
 #SBATCH --mem=15G
 #SBATCH --cpus-per-task=6
 #SBATCH --gpus=a100_3g.20gb:1
-#SBATCH --time=3:00:00
+#SBATCH --time=6:00:00
 #SBATCH --array=0-3
 #SBATCH --signal=B:TERM@120
 #SBATCH --output=slurm_logs/%x-%A_%a.out
@@ -22,7 +22,7 @@ set -e
 
 EXPERIMENT="classification_samus"
 
-SEEDS=(42 43 44)
+SEEDS=(45 46)
 METHODS=(head_only full_finetuning)
 TASKS=(
     aul_mass_classification
