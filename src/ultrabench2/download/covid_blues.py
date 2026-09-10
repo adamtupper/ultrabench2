@@ -4,10 +4,10 @@ The dataset is available from:
 https://github.com/NinaWie/COVID-BLUES
 
 The full repository is downloaded as a ZIP archive and extracted. Pass
-the resulting directory to `ultrabench process covid-blues` as RAW_DATA_DIR.
+the resulting directory to `ultrabench2 process covid-blues` as RAW_DATA_DIR.
 
 Usage:
-    ultrabench download covid-blues DOWNLOAD_DIR
+    ultrabench2 download covid-blues DOWNLOAD_DIR
 """
 
 import os
@@ -32,7 +32,7 @@ def download_covid_blues(
     """Download the COVID-BLUES dataset from GitHub.
 
     Downloads the full repository as a ZIP archive and extracts it.
-    Pass the resulting directory to `ultrabench process covid-blues`
+    Pass the resulting directory to `ultrabench2 process covid-blues`
     as the RAW_DATA_DIR.
 
     Args:
@@ -56,5 +56,5 @@ def download_covid_blues(
 
     typer.echo(
         f"COVID-BLUES dataset downloaded to {output_dir}. "
-        f"Run `ultrabench process covid-blues {output_dir}` to process."
+        f"Run `ultrabench2 process covid-blues {output_dir}` to process."
     )

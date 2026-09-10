@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.samus.samus_image_encoder_vit import ImageEncoderViT
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.samus.samus_image_encoder_vit import ImageEncoderViT
 
 
 class SAMUSBackbone(Backbone):

@@ -26,7 +26,7 @@ for use by the evaluation layer:
     - ground_truth_classification.csv
 
 Usage:
-    ultrabench process masld RAW_DATA_PATH OUTPUT_DIR
+    ultrabench2 process masld RAW_DATA_PATH OUTPUT_DIR
 """
 
 import os
@@ -62,7 +62,7 @@ from .utils import (
     verify_revision_unpublished,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/MASLD"
 DATASET_INFO = DatasetInfo(

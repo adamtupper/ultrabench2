@@ -98,7 +98,13 @@ class DeblurMIMMAEEncoder(nn.Module):
         )
         self.blocks = nn.ModuleList(
             [
-                _VitBlock(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
+                _VitBlock(
+                    embed_dim,
+                    num_heads,
+                    mlp_ratio,
+                    qkv_bias=True,
+                    norm_layer=norm_layer,
+                )
                 for _ in range(depth)
             ]
         )
@@ -111,7 +117,9 @@ class DeblurMIMMAEEncoder(nn.Module):
             int(self.patch_embed.num_patches**0.5),
             cls_token=True,
         )
-        self.pos_embed.data.copy_(torch.tensor(pos_embed, dtype=torch.float32).unsqueeze(0))
+        self.pos_embed.data.copy_(
+            torch.tensor(pos_embed, dtype=torch.float32).unsqueeze(0)
+        )
         w = self.patch_embed.proj.weight.data
         torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
         torch.nn.init.normal_(self.cls_token, std=0.02)
@@ -137,7 +145,9 @@ class DeblurMIMMAEEncoder(nn.Module):
         """
         x = self.patch_embed(x)
         x = x + self.pos_embed[:, 1:, :]
-        cls_tokens = (self.cls_token + self.pos_embed[:, :1, :]).expand(x.shape[0], -1, -1)
+        cls_tokens = (self.cls_token + self.pos_embed[:, :1, :]).expand(
+            x.shape[0], -1, -1
+        )
         x = torch.cat((cls_tokens, x), dim=1)
         for blk in self.blocks:
             x = blk(x)
@@ -515,7 +525,9 @@ class DMaskedAutoencoderConvViT(nn.Module):
             int(self.patch_embed3.num_patches**0.5),
             cls_token=False,
         )
-        self.pos_embed.data.copy_(torch.tensor(pos_embed, dtype=torch.float32).unsqueeze(0))
+        self.pos_embed.data.copy_(
+            torch.tensor(pos_embed, dtype=torch.float32).unsqueeze(0)
+        )
 
         decoder_pos_embed = get_2d_sincos_pos_embed(
             self.decoder_pos_embed.shape[-1],

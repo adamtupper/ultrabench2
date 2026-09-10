@@ -13,8 +13,8 @@ from pathlib import Path
 import torch
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.deblurmim.deblurmim_vit import (
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.deblurmim.deblurmim_vit import (
     deblurmim_mae_base_patch16,
     dconvmae_convvit_base_patch16,
 )
@@ -34,7 +34,12 @@ _VARIANT_CONFIGS: dict[str, dict] = {
         "block_indices": [2, 5, 8, 10],
         "has_cls_token": False,
         "blocks_attr": "blocks3",
-        "validation_prefixes": ("patch_embed1.", "patch_embed2.", "patch_embed3.", "blocks3."),
+        "validation_prefixes": (
+            "patch_embed1.",
+            "patch_embed2.",
+            "patch_embed3.",
+            "blocks3.",
+        ),
     },
 }
 
@@ -126,20 +131,16 @@ class DeblurMIMBackbone(Backbone):
         """
         path = Path(self._checkpoint_path)
         if not path.exists():
-            raise FileNotFoundError(
-                f"Could not find DeblurMIM weights at: {path}"
-            )
+            raise FileNotFoundError(f"Could not find DeblurMIM weights at: {path}")
 
         ckpt = torch.load(path, map_location="cpu", weights_only=False)
-        state_dict = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+        state_dict = (
+            ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+        )
 
         msg = self._encoder.load_state_dict(state_dict, strict=False)
 
-        bad = [
-            k
-            for k in msg.missing_keys
-            if k.startswith(self._validation_prefixes)
-        ]
+        bad = [k for k in msg.missing_keys if k.startswith(self._validation_prefixes)]
         if bad:
             raise RuntimeError(
                 f"Core encoder keys missing after loading DeblurMIM checkpoint. "

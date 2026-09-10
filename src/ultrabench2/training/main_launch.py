@@ -12,8 +12,8 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
 # Import your config
-from ultrabench.training.lightning import DownstreamPipeline
-from ultrabench.utils.common import get_model_label, set_global_seed
+from ultrabench2.training.lightning import DownstreamPipeline
+from ultrabench2.utils.common import get_model_label, set_global_seed
 
 # Setup logging
 logging.basicConfig(

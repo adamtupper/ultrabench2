@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torchvision.transforms.v2 as tv_transforms
 
 # from mmpretrain.models.backbones import ViTSAM
-from ultrabench.models.ultrasam.ultrasam_vit_sam_arch import ViTSAM
+from ultrabench2.models.ultrasam.ultrasam_vit_sam_arch import ViTSAM
 
 # Use UltraSam conda environment to use this as downstream
 

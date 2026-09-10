@@ -25,7 +25,7 @@ encoded at the resolution of that split:
     - ground_truth_segmentation.csv
 
 Usage:
-    ultrabench process mmotu RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 process mmotu RAW_DATA_DIR OUTPUT_DIR
 """
 
 import os
@@ -50,7 +50,7 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 from typing_extensions import Annotated
 
-from ultrabench.datasets.utils import partition_by_manifest
+from ultrabench2.datasets.utils import partition_by_manifest
 
 from .utils import (
     DATASET_REVISION,
@@ -66,7 +66,7 @@ from .utils import (
     write_test_ground_truth,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/MMOTU-2D"
 DATASET_INFO = DatasetInfo(

@@ -4,7 +4,7 @@ The dataset is available at:
 https://humanheart-project.creatis.insa-lyon.fr/database/#collection/6373703d73e9f0047faa1bc8
 
 Usage:
-    ultrabench camus dl DOWNLOAD_DIR
+    ultrabench2 camus dl DOWNLOAD_DIR
 """
 
 import os
@@ -41,5 +41,5 @@ def download_camus(
 
     typer.echo(f"Download complete. Saved to {output_dir}.")
     typer.echo(
-        f"Process the dataset by running `ultrabench process camus {output_dir}`."
+        f"Process the dataset by running `ultrabench2 process camus {output_dir}`."
     )

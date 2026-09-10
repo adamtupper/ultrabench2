@@ -22,7 +22,9 @@ def get_2d_sincos_pos_embed(embed_dim: int, grid_size: int, cls_token: bool = Fa
     """Build a 2-D sinusoidal positional embedding."""
     grid_h = np.arange(grid_size, dtype=np.float32)
     grid_w = np.arange(grid_size, dtype=np.float32)
-    grid = np.stack(np.meshgrid(grid_w, grid_h), axis=0).reshape(2, 1, grid_size, grid_size)
+    grid = np.stack(np.meshgrid(grid_w, grid_h), axis=0).reshape(
+        2, 1, grid_size, grid_size
+    )
     pos_embed = _get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
     if cls_token:
         pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
@@ -82,7 +84,13 @@ class UltraFedFMEncoder(nn.Module):
 
         self.blocks = nn.ModuleList(
             [
-                Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
+                Block(
+                    embed_dim,
+                    num_heads,
+                    mlp_ratio,
+                    qkv_bias=True,
+                    norm_layer=norm_layer,
+                )
                 for _ in range(depth)
             ]
         )
@@ -96,7 +104,9 @@ class UltraFedFMEncoder(nn.Module):
             int(self.patch_embed.num_patches**0.5),
             cls_token=True,
         )
-        self.pos_embed.data.copy_(torch.tensor(pos_embed, dtype=torch.float32).unsqueeze(0))
+        self.pos_embed.data.copy_(
+            torch.tensor(pos_embed, dtype=torch.float32).unsqueeze(0)
+        )
 
         w = self.patch_embed.proj.weight.data
         torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
@@ -123,7 +133,9 @@ class UltraFedFMEncoder(nn.Module):
         """
         x = self.patch_embed(x)
         x = x + self.pos_embed[:, 1:, :]
-        cls_tokens = (self.cls_token + self.pos_embed[:, :1, :]).expand(x.shape[0], -1, -1)
+        cls_tokens = (self.cls_token + self.pos_embed[:, :1, :]).expand(
+            x.shape[0], -1, -1
+        )
         x = torch.cat((cls_tokens, x), dim=1)
         for blk in self.blocks:
             x = blk(x)

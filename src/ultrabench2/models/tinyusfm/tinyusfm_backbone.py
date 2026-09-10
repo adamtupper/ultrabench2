@@ -5,8 +5,8 @@ from pathlib import Path
 import torch
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.tinyusfm.tinyusfm_vit import (
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.tinyusfm.tinyusfm_vit import (
     TinyUSFMEncoder,
 )
 

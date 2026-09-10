@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.echocare.echocare_swin_transformer_arch import SwinTransformer
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.echocare.echocare_swin_transformer_arch import SwinTransformer
 
 
 class EchoCareBackbone(Backbone):

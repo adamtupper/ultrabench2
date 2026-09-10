@@ -1,4 +1,4 @@
 if __name__ == "__main__":
-    from ultrabench.cli import app
+    from ultrabench2.cli import app
 
     app()

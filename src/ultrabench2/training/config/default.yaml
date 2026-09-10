@@ -6,7 +6,7 @@ defaults:
   - _self_
 
 data:
-  setup: "ultrabench"
+  setup: "ultrabench2"
   image_size: 256 # Target image size for transforms
   shot_pct: 1.0 # Single value - sweep with -m data.shot_pct=0.1,0.5,1.0
   train_val_split: 0.8 # Train/validation split ratio

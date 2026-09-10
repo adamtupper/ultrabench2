@@ -28,7 +28,7 @@ A ground-truth CSV file is also created in each test split directory:
     - ground_truth_classification.csv
 
 Usage:
-    ultrabench gbcu RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 gbcu RAW_DATA_DIR OUTPUT_DIR
 """
 
 import csv
@@ -54,7 +54,7 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 from typing_extensions import Annotated
 
-from ultrabench.datasets.utils import partition_by_manifest
+from ultrabench2.datasets.utils import partition_by_manifest
 
 from .utils import (
     DATASET_REVISION,
@@ -69,7 +69,7 @@ from .utils import (
     write_test_ground_truth,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 TRAIN_FILE = "train.txt"
 TEST_FILE = "test.txt"

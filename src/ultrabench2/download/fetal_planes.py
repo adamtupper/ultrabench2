@@ -3,7 +3,7 @@
 The dataset is available at https://zenodo.org/records/3904280.
 
 Usage:
-    ultrabench download fetal-planes DOWNLOAD_DIR
+    ultrabench2 download fetal-planes DOWNLOAD_DIR
 """
 
 import os
@@ -41,5 +41,5 @@ def download_fetal_planes(
     typer.echo(f"Download complete. Saved to {output_dir}.")
     typer.echo(
         f"Process the dataset by running "
-        f"`ultrabench process fetal-planes {output_dir}`."
+        f"`ultrabench2 process fetal-planes {output_dir}`."
     )

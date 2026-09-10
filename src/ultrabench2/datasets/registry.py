@@ -90,20 +90,20 @@ _REGISTRY: dict[str, DatasetConfig] = {
     "COVID-BLUES": DatasetConfig(
         type=DatasetType.RAW,
         hub_id="UltraBench/COVID-BLUES-raw",
-        loader="ultrabench.datasets.covid_blues:load_covid_blues",
+        loader="ultrabench2.datasets.covid_blues:load_covid_blues",
     ),
     "MMOTU": DatasetConfig(
         type=DatasetType.RAW,
         hub_id="UltraBench/MMOTU-raw",
-        loader="ultrabench.datasets.mmotu:load_mmotu",
+        loader="ultrabench2.datasets.mmotu:load_mmotu",
     ),
     # Local -- the user must supply the raw data path.
     "GBCU": DatasetConfig(
-        type=DatasetType.LOCAL, loader="ultrabench.datasets.gbcu:load_gbcu"
+        type=DatasetType.LOCAL, loader="ultrabench2.datasets.gbcu:load_gbcu"
     ),
     "OpenKidney": DatasetConfig(
         type=DatasetType.LOCAL,
-        loader="ultrabench.datasets.open_kidney:load_open_kidney",
+        loader="ultrabench2.datasets.open_kidney:load_open_kidney",
     ),
 }
 """Every dataset name UltraBench accepts, mapped to its configuration."""

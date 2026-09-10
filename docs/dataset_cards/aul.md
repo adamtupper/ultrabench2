@@ -40,17 +40,17 @@ Note that  image `malignant_375` is missing a liver segmentation mask, so there 
 
 ## Usage
 
-Load this dataset with `ultrabench.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
+Load this dataset with `ultrabench2.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
 
 ```python
-import ultrabench
+import ultrabench2
 
-train_data = ultrabench.load_dataset(
+train_data = ultrabench2.load_dataset(
     name="AUL",
     split="train",
     revision="0.4",
 )
-test_data = ultrabench.load_dataset(
+test_data = ultrabench2.load_dataset(
     name="AUL",
     split="test.256",
     revision="0.4",

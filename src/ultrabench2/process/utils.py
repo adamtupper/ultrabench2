@@ -15,9 +15,9 @@ from tqdm.auto import tqdm
 
 from datasets import DatasetDict
 
-from ultrabench.core.aggregation import format_sequence_id
-from ultrabench.datasets.registry import IMAGE_SIZE  # noqa: F401
-from ultrabench.core.rle import mask_to_rle
+from ultrabench2.core.aggregation import format_sequence_id
+from ultrabench2.datasets.registry import IMAGE_SIZE  # noqa: F401
+from ultrabench2.core.rle import mask_to_rle
 
 MAX_TRAIN_SAMPLES = 1000
 """The maximum number of examples in a published training split."""

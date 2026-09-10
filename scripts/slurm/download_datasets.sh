@@ -33,10 +33,10 @@ done
 # datasets need their raw data staged under $project/data/raw.
 export ULTRABENCH_CACHE=$project/data/ultrabench_cache
 
-python -c "import ultrabench; ultrabench.load_dataset(name='MMOTU', revision='0.4')"
-python -c "import ultrabench; ultrabench.load_dataset(name='COVID-BLUES', revision='0.4')"
-python -c "import ultrabench; ultrabench.load_dataset(name='GBCU', path='$project/data/raw/GBCU-Shared')"
-python -c "import ultrabench; ultrabench.load_dataset(name='OpenKidney', path='$project/data/raw/kidneyUS')"
+python -c "import ultrabench2; ultrabench2.load_dataset(name='MMOTU', revision='0.4')"
+python -c "import ultrabench2; ultrabench2.load_dataset(name='COVID-BLUES', revision='0.4')"
+python -c "import ultrabench2; ultrabench2.load_dataset(name='GBCU', path='$project/data/raw/GBCU-Shared')"
+python -c "import ultrabench2; ultrabench2.load_dataset(name='OpenKidney', path='$project/data/raw/kidneyUS')"
 
 deactivate
 rm -r ~/venvs/hf

@@ -27,7 +27,7 @@ resolution of that split:
     - ground_truth_segmentation.csv
 
 Usage:
-    ultrabench process psfhs RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 process psfhs RAW_DATA_DIR OUTPUT_DIR
 """
 
 import glob
@@ -64,7 +64,7 @@ from .utils import (
     verify_revision_unpublished,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/PSFHS"
 DATASET_INFO = DatasetInfo(

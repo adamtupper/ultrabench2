@@ -14,6 +14,6 @@ filter_by: liver_mask
 sequence_by: null
 
 criterion:
-  _target_: ultrabench.training.losses.DiceCELoss
+  _target_: ultrabench2.training.losses.DiceCELoss
   ce_weight: 0.5
   dice_weight: 0.5

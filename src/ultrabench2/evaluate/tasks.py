@@ -51,7 +51,7 @@ class TaskSpec:
             segmentation tasks.
         dataset: The Hugging Face dataset the task comes from.
         dataset_name: The name the task's dataset is registered under in
-            `ultrabench.datasets`, or None for a config that predates the
+            `ultrabench2.datasets`, or None for a config that predates the
             registry.
         subset: The dataset subset, or None if the dataset has only one.
         revision: The pinned dataset revision.

@@ -49,7 +49,7 @@ the resolution of that split:
 
 Usage:
 
-    ultrabench process stmus RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 process stmus RAW_DATA_DIR OUTPUT_DIR
 """
 
 import os
@@ -85,7 +85,7 @@ from .utils import (
     verify_revision_unpublished,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/STMUS"
 

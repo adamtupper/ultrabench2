@@ -3,7 +3,7 @@
 The dataset is available at https://zenodo.org/records/8231412.
 
 Usage:
-    ultrabench download busbra DOWNLOAD_DIR
+    ultrabench2 download busbra DOWNLOAD_DIR
 """
 
 import os
@@ -40,5 +40,5 @@ def download_busbra(
 
     typer.echo(f"Download complete. Saved to {output_dir}.")
     typer.echo(
-        f"Process the dataset by running `ultrabench process busbra {output_dir}`."
+        f"Process the dataset by running `ultrabench2 process busbra {output_dir}`."
     )

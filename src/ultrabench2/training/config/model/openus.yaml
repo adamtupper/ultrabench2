@@ -1,4 +1,4 @@
-_target_: ultrabench.models.openus.openus_backbone.OpenUSBackbone
+_target_: ultrabench2.models.openus.openus_backbone.OpenUSBackbone
 checkpoint_path: ${system.checkpoint_dir}/openus/openus_cpt0150.pth
 output_intermediate_features: true
 # Local HF Kernels build of the selective scan kernel, tried first. May be a

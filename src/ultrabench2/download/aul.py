@@ -3,7 +3,7 @@
 The dataset is available at https://zenodo.org/records/7272660.
 
 Usage:
-    ultrabench aul dl DOWNLOAD_DIR
+    ultrabench2 aul dl DOWNLOAD_DIR
 """
 
 import os
@@ -39,4 +39,6 @@ def download_aul(
             os.remove(archive_path)
 
     typer.echo(f"Download complete. Saved to {output_dir}.")
-    typer.echo(f"Process the dataset by running `ultrabench process aul {output_dir}`.")
+    typer.echo(
+        f"Process the dataset by running `ultrabench2 process aul {output_dir}`."
+    )

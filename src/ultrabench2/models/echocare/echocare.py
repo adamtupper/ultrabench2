@@ -4,7 +4,7 @@ import torch
 import torchvision.transforms.v2 as tv_transforms
 
 # from monai.networks.nets.swin_unetr import SwinTransformer
-from ultrabench.models.echocare.echocare_swin_transformer_arch import SwinTransformer
+from ultrabench2.models.echocare.echocare_swin_transformer_arch import SwinTransformer
 
 
 def get_echocare_extractor(device="cuda", checkpoint_path=None):

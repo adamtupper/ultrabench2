@@ -3,7 +3,7 @@
 The dataset is available at https://zenodo.org/records/10969427.
 
 Usage:
-    ultrabench psfhs dl DOWNLOAD_DIR
+    ultrabench2 psfhs dl DOWNLOAD_DIR
 """
 
 import os
@@ -40,5 +40,5 @@ def download_psfhs(
 
     typer.echo(f"Download complete. Saved to {output_dir}.")
     typer.echo(
-        f"Process the dataset by running `ultrabench process psfhs {output_dir}`."
+        f"Process the dataset by running `ultrabench2 process psfhs {output_dir}`."
     )

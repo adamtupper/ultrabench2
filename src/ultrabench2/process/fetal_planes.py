@@ -50,7 +50,7 @@ each subset:
     - fetal_brain/test.{size}/ground_truth_classification.csv
 
 Usage:
-    ultrabench process fetal-planes RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 process fetal-planes RAW_DATA_DIR OUTPUT_DIR
 """
 
 import os
@@ -86,7 +86,7 @@ from .utils import (
     verify_revision_unpublished,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 CSV_FILE = "FETAL_PLANES_DB_data.csv"
 IMAGE_DIR = "Images"

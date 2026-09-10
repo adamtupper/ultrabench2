@@ -1,7 +1,7 @@
 """Publish a dataset's original files to the Hugging Face Hub.
 
 Some datasets may be redistributed unmodified but not in a preprocessed
-form. Publishing their original files lets `ultrabench.load_dataset`
+form. Publishing their original files lets `ultrabench2.load_dataset`
 preprocess them on the user's machine without the user having to track
 down the raw data themselves.
 """
@@ -13,7 +13,7 @@ from typing import Annotated
 import typer
 from huggingface_hub import HfApi
 
-from ultrabench.process.utils import DATASET_REVISION, verify_revision_unpublished
+from ultrabench2.process.utils import DATASET_REVISION, verify_revision_unpublished
 
 
 @dataclass(frozen=True)
@@ -62,7 +62,7 @@ def publish_raw(
     """Publish a dataset's original files to the Hugging Face Hub.
 
     Nothing is modified: the layout on the Hub is the layout
-    `ultrabench process` expects, so the loaders can pass a downloaded
+    `ultrabench2 process` expects, so the loaders can pass a downloaded
     snapshot straight to the processing code.
 
     Args:

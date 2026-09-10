@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.ultrasam.ultrasam_vit_sam_arch import ViTSAM
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.ultrasam.ultrasam_vit_sam_arch import ViTSAM
 
 
 class UltraSAMBackbone(Backbone):

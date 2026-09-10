@@ -9,7 +9,7 @@ import torchvision.transforms.v2 as tv_transforms
 # from modeling import ImageEncoderViT
 # sys.path.append('/raid/aradhachandran/thyroid/code/foundation_model/downstreams/SAMUS/utils/')
 # from data_us import JointTransform2D
-from ultrabench.models.samus.samus_image_encoder_vit import ImageEncoderViT
+from ultrabench2.models.samus.samus_image_encoder_vit import ImageEncoderViT
 
 
 def get_samus_extractor(device="cuda", checkpoint_path=None):

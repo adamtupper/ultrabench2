@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ultrabench.core.rle import rle_to_mask
+from ultrabench2.core.rle import rle_to_mask
 
 logger = logging.getLogger(__name__)
 

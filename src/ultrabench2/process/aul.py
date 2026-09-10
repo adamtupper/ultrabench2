@@ -36,7 +36,7 @@ encoded at the resolution of that split:
     - ground_truth_segmentation_liver.csv
 
 Usage:
-    ultrabench aul RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 aul RAW_DATA_DIR OUTPUT_DIR
 """
 
 import glob
@@ -76,7 +76,7 @@ from .utils import (
     verify_revision_unpublished,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/AUL"
 CLASS_TO_LABEL = {

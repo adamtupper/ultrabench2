@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.openus.openus_vmamba import (
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.openus.openus_vmamba import (
     DEFAULT_KERNEL_REPO_ID,
     DEFAULT_KERNEL_VERSION,
     Backbone_DINOv2_VSSM_2,

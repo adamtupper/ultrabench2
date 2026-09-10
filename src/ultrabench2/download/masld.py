@@ -3,7 +3,7 @@
 The dataset is available at https://zenodo.org/records/1009146.
 
 Usage:
-    ultrabench download masld DOWNLOAD_DIR
+    ultrabench2 download masld DOWNLOAD_DIR
 """
 
 import os
@@ -31,5 +31,5 @@ def download_masld(
     zenodo_download("1009146", output_dir=output_dir)
     typer.echo(f"Download complete. Saved to {output_dir}.")
     typer.echo(
-        f"Process the dataset by running `ultrabench process masld {output_dir}/dataset_liver_bmodes_steatosis_assessment_IJCARS.mat`."  # noqa: E501
+        f"Process the dataset by running `ultrabench2 process masld {output_dir}/dataset_liver_bmodes_steatosis_assessment_IJCARS.mat`."  # noqa: E501
     )

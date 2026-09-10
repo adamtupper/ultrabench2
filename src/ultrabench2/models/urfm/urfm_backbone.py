@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.urfm.urfm import MaskedAutoencoderViT
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.urfm.urfm import MaskedAutoencoderViT
 
 _VARIANT_CONFIGS: dict[str, dict] = {
     "urfm_mae_vit_base_patch16": {

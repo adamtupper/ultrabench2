@@ -48,7 +48,7 @@ The MASLD diagnosis describes the patient, not an individual image, so the task 
 Generate one prediction per patient by averaging the predicted probabilities over the patient's images, then taking the argmax. The ground-truth CSV carries a `sequence_id` column (the patient ID) that identifies which images belong together, so the predictions CSV stays per image:
 
 ```bash
-python -m ultrabench.evaluate task=classification aggregate_by=sequence_id \
+python -m ultrabench2.evaluate task=classification aggregate_by=sequence_id \
   ground_truth=test-ground-truth-classification.csv \
   predictions=predictions.csv
 ```
@@ -59,17 +59,17 @@ See [the evaluation documentation](../evaluation.md) for the CSV format.
 
 ## Usage
 
-Load this dataset with `ultrabench.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
+Load this dataset with `ultrabench2.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
 
 ```python
-import ultrabench
+import ultrabench2
 
-train_data = ultrabench.load_dataset(
+train_data = ultrabench2.load_dataset(
     name="MASLD",
     split="train",
     revision="0.4",
 )
-test_data = ultrabench.load_dataset(
+test_data = ultrabench2.load_dataset(
     name="MASLD",
     split="test.256",
     revision="0.4",

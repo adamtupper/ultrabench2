@@ -40,7 +40,7 @@ class AdaptiveLongestMaxSize(A.LongestMaxSize):
     cv2.INTER_AREA is the right kernel for shrinking, but above 1x OpenCV
     collapses it towards nearest-neighbour sampling, so enlargements use
     cv2.INTER_CUBIC instead. This mirrors the rule that
-    ultrabench.process.utils.resize_and_pad applies when it builds the
+    ultrabench2.process.utils.resize_and_pad applies when it builds the
     test.256 splits offline, so a training image and its published
     test.256 counterpart are resized identically.
 

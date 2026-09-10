@@ -29,7 +29,7 @@ A ground-truth CSV file is also created in each test split directory:
     - ground_truth_classification.csv
 
 Usage:
-    ultrabench process covid-blues RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 process covid-blues RAW_DATA_DIR OUTPUT_DIR
 """
 
 import os
@@ -54,7 +54,7 @@ from datasets import (
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
-from ultrabench.datasets.utils import partition_by_manifest
+from ultrabench2.datasets.utils import partition_by_manifest
 
 from .utils import (
     DATASET_REVISION,
@@ -68,7 +68,7 @@ from .utils import (
     write_test_ground_truth,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/COVID-BLUES"
 DATASET_INFO = DatasetInfo(
@@ -326,7 +326,7 @@ def build_covid_blues_dataset(
 
     Args:
         raw_data_dir: The directory holding the `covid_blues` folder
-            that `ultrabench download covid-blues` produces.
+            that `ultrabench2 download covid-blues` produces.
         size: The height and width of the resized test images.
 
     Returns:
@@ -417,7 +417,7 @@ def process_covid_blues(
 
     Args:
         raw_data_dir: Path to the raw data directory (the ``covid_blues``
-            folder produced by ``ultrabench download covid-blues``).
+            folder produced by ``ultrabench2 download covid-blues``).
         output_dir: Path to the directory where the processed dataset
             will be saved.
         size: Height and width in pixels for resized test images.

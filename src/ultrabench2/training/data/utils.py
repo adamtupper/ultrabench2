@@ -8,9 +8,9 @@ import numpy as np
 from datasets import Dataset
 from sklearn.model_selection import GroupShuffleSplit
 
-from ultrabench.core.aggregation import join_sequence_values
-from ultrabench.datasets import load_dataset
-from ultrabench.training.data.transforms import albumentations_transforms
+from ultrabench2.core.aggregation import join_sequence_values
+from ultrabench2.datasets import load_dataset
+from ultrabench2.training.data.transforms import albumentations_transforms
 
 TEST_SPLIT = "test.256"
 """The test split downstream training and evaluation both use."""
@@ -129,7 +129,7 @@ def get_splits(
 
     Args:
         name: The dataset to load, as registered in
-            `ultrabench.datasets`.
+            `ultrabench2.datasets`.
         input_key: The column of the the dataset containing the input
             images.
         target_key: The column of the dataset containing the target

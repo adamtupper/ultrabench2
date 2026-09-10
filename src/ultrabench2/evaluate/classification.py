@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 from sklearn.metrics import balanced_accuracy_score
 
-from ultrabench.core.aggregation import aggregate_sequence_probabilities
+from ultrabench2.core.aggregation import aggregate_sequence_probabilities
 
 logger = logging.getLogger(__name__)
 

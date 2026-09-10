@@ -16,9 +16,9 @@ from datasets import Dataset, DatasetDict, load_from_disk
 from .registry import IMAGE_SIZE
 
 if TYPE_CHECKING:
-    from ultrabench.process.utils import BuildResult
+    from ultrabench2.process.utils import BuildResult
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 MANIFEST_DIR = Path(__file__).resolve().parent / "manifests"
 """The directory holding the tracked split manifests."""
@@ -161,7 +161,7 @@ def dataset_cache_key(
         size: The height and width of the resized test images.
         path: The raw data directory for a local dataset, or None.
         revision: The Hub revision for a raw dataset, or None.
-        package_version: The version of the ultrabench package.
+        package_version: The version of the ultrabench2 package.
         dataset_revision: The revision the processing code produces, or
             None to read it from the processing layer.
 
@@ -169,7 +169,7 @@ def dataset_cache_key(
         The first 12 hex characters of the SHA-256 of the inputs.
     """
     if dataset_revision is None:
-        from ultrabench.process.utils import DATASET_REVISION
+        from ultrabench2.process.utils import DATASET_REVISION
 
         dataset_revision = DATASET_REVISION
 
@@ -267,7 +267,7 @@ def save_to_cache(
         The cached dataset, read back so that the first call and every
         later one return the same thing.
     """
-    from ultrabench.process.utils import save_version_info, write_test_ground_truth
+    from ultrabench2.process.utils import save_version_info, write_test_ground_truth
 
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     staging = cache_path.parent / f".tmp-{uuid.uuid4().hex}"

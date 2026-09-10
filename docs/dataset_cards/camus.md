@@ -66,7 +66,7 @@ Segmentation is evaluated per image. Image quality assessment is evaluated per *
 Generate one prediction per sequence by averaging the predicted probabilities over every frame in the sequence, then taking the argmax. The ground-truth CSV carries a `sequence_id` column (`{patient}_{view}`, for example `313_2CH`) that identifies which frames belong together, so the predictions CSV stays per image:
 
 ```bash
-python -m ultrabench.evaluate task=classification aggregate_by=sequence_id \
+python -m ultrabench2.evaluate task=classification aggregate_by=sequence_id \
   ground_truth=classification-test-ground-truth-classification.csv \
   predictions=predictions.csv
 ```
@@ -75,18 +75,18 @@ See [the evaluation documentation](../evaluation.md) for the CSV format.
 
 ## Usage
 
-Load this dataset with `ultrabench.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
+Load this dataset with `ultrabench2.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
 
 ```python
-import ultrabench
+import ultrabench2
 
-train_data = ultrabench.load_dataset(
+train_data = ultrabench2.load_dataset(
     name="CAMUS",
     subset="classification",
     split="train",
     revision="0.4",
 )
-test_data = ultrabench.load_dataset(
+test_data = ultrabench2.load_dataset(
     name="CAMUS",
     subset="classification",
     split="test.256",

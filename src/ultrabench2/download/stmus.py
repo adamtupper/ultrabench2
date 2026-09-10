@@ -4,7 +4,7 @@ The dataset is available at
 https://data.mendeley.com/datasets/3jykz7wz8d/1.
 
 Usage:
-    ultrabench download stmus DOWNLOAD_DIR
+    ultrabench2 download stmus DOWNLOAD_DIR
 """
 
 import os
@@ -54,5 +54,5 @@ def download_stmus(
 
     typer.echo(f"Download complete. Saved to {output_dir}.")
     typer.echo(
-        f"Process the dataset by running `ultrabench process stmus {output_dir}`."
+        f"Process the dataset by running `ultrabench2 process stmus {output_dir}`."
     )

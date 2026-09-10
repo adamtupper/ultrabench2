@@ -19,12 +19,12 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
 from torchmetrics.segmentation import DiceScore, MeanIoU
 
-from ultrabench.core.aggregation import aggregate_sequence_probabilities
-from ultrabench.core.rle import mask_to_rle
-from ultrabench.models.backbone import Backbone
-from ultrabench.training.callbacks import BackboneFinetuningSteps
-from ultrabench.training.heads.cls_heads import get_cls_head
-from ultrabench.training.heads.seg_heads import get_seg_head
+from ultrabench2.core.aggregation import aggregate_sequence_probabilities
+from ultrabench2.core.rle import mask_to_rle
+from ultrabench2.models.backbone import Backbone
+from ultrabench2.training.callbacks import BackboneFinetuningSteps
+from ultrabench2.training.heads.cls_heads import get_cls_head
+from ultrabench2.training.heads.seg_heads import get_seg_head
 
 from .data.transforms import get_train_test_transforms
 from .data.utils import get_splits, resolve_task_path

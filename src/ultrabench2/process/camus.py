@@ -54,7 +54,7 @@ quality is graded per (patient, view) acquisition rather than per
 frame.
 
 Usage:
-    ultrabench process camus RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 process camus RAW_DATA_DIR OUTPUT_DIR
 """
 
 import glob
@@ -94,7 +94,7 @@ from .utils import (
     verify_revision_unpublished,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/CAMUS"
 CLASS_TO_LABEL = {

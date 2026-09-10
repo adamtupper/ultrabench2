@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.usfm.usfm import VisionTransformer
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.usfm.usfm import VisionTransformer
 
 
 class USFMBackbone(Backbone):

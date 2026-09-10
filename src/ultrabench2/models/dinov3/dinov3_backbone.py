@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.backbone import Backbone, BackboneOutput
 
 _VIT_VARIANT_CONFIGS: dict[str, dict] = {
     "dinov3_vitb16": {

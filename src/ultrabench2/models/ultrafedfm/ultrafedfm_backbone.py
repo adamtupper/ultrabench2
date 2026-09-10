@@ -5,8 +5,8 @@ from pathlib import Path
 import torch
 import torchvision.transforms.v2 as transforms
 
-from ultrabench.models.backbone import Backbone, BackboneOutput
-from ultrabench.models.ultrafedfm.ultrafedfm_vit import (
+from ultrabench2.models.backbone import Backbone, BackboneOutput
+from ultrabench2.models.ultrafedfm.ultrafedfm_vit import (
     UltraFedFMEncoder,
     ultrafedfm_vit_base_patch16,
     ultrafedfm_vit_huge_patch14,

@@ -37,7 +37,7 @@ directory, with the masks encoded at the resolution of that split:
     - ground_truth_segmentation_regions.csv
 
 Usage:
-    ultrabench open_kidney RAW_DATA_DIR OUTPUT_DIR
+    ultrabench2 open_kidney RAW_DATA_DIR OUTPUT_DIR
 """
 
 import ast
@@ -63,7 +63,7 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 from typing_extensions import Annotated
 
-from ultrabench.datasets.utils import partition_by_manifest
+from ultrabench2.datasets.utils import partition_by_manifest
 
 from .utils import (
     DATASET_REVISION,
@@ -78,7 +78,7 @@ from .utils import (
     write_test_ground_truth,
 )
 
-__version__ = version("ultrabench")
+__version__ = version("ultrabench2")
 
 OUTPUT_NAME = "UltraBench/OpenKidney"
 SONOGRAPHER = 1
