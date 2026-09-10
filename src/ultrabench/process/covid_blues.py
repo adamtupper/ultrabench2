@@ -52,16 +52,20 @@ from datasets import (
     Value,
 )
 from huggingface_hub import HfApi
-from sklearn.model_selection import GroupShuffleSplit
 from tqdm.auto import tqdm
+
+from ultrabench.datasets.utils import partition_by_manifest
 
 from .utils import (
     DATASET_REVISION,
+    IMAGE_SIZE,
+    BuildResult,
     generate_classification_ground_truth_from_records,
     ground_truth_commit_operations,
     resize_and_pad,
     save_version_info,
     verify_revision_unpublished,
+    write_test_ground_truth,
 )
 
 __version__ = version("ultrabench")
@@ -234,20 +238,19 @@ def _records_from_video(
     return records
 
 
-def _make_train_generator(train_df: pd.DataFrame, raw_data_dir: str):
+def _make_train_generator(rows: list):
     """Return a generator that yields train records one frame at a time.
 
     Processes one video at a time to keep peak memory usage low.
 
     Args:
-        train_df: DataFrame with columns ``video``, ``patient``,
-            ``blue_point``, ``covid19``, and ``video_path``.
-        raw_data_dir: Path to the ``covid_blues`` directory.
+        rows: The video rows of the train split, each carrying
+            ``patient``, ``blue_point``, ``covid19`` and
+            ``video_path``.
 
     Returns:
         A zero-argument generator function.
     """
-    rows = list(train_df.itertuples(index=False))
 
     def generator():
         for row in tqdm(rows, desc="Processing train split"):
@@ -280,6 +283,121 @@ def verify_args(raw_data_dir: str, output_dir: str, publish: bool = False) -> No
         verify_revision_unpublished(OUTPUT_NAME)
 
 
+def write_ground_truth(
+    records: list[dict], gt_dir: Path, image_size: int | None
+) -> None:
+    """Write the ground-truth CSV of one test split.
+
+    The label applies to a whole video rather than a single frame, so
+    the CSV carries a sequence ID that lets predictions be pooled per
+    patient.
+
+    Args:
+        records: The records of the split.
+        gt_dir: The split directory to write the CSV into.
+        image_size: Unused. Classification labels do not depend on the
+            image resolution, but every dataset's writer shares one
+            signature.
+    """
+    generate_classification_ground_truth_from_records(
+        [
+            {
+                "filename": r["filename"],
+                "label": r["covid19"],
+                "patient": r["patient"],
+            }
+            for r in records
+        ],
+        gt_dir / "ground_truth_classification.csv",
+        sequence_keys=["patient"],
+    )
+
+
+def build_covid_blues_dataset(
+    raw_data_dir: str | Path, size: int = IMAGE_SIZE
+) -> BuildResult:
+    """Build the COVID-BLUES splits from the raw data.
+
+    The splits come from the tracked manifests rather than from a
+    seeded `GroupShuffleSplit`, so that processing the raw data
+    reproduces the published splits exactly. The manifests list videos
+    rather than frames, so a video belonging to neither split is never
+    decoded.
+
+    Args:
+        raw_data_dir: The directory holding the `covid_blues` folder
+            that `ultrabench download covid-blues` produces.
+        size: The height and width of the resized test images.
+
+    Returns:
+        The processed splits and the test records the ground truth is
+        built from.
+
+    Raises:
+        ValueError: If the raw data is missing a video the manifests
+            list.
+    """
+    raw_data_dir = os.path.join(str(raw_data_dir), "covid_blues")
+
+    video_paths = list(Path(raw_data_dir).glob("lus_videos/*.mp4"))
+    video_rows = [parse_video_filename(p) for p in video_paths]
+    video_df = pd.DataFrame(video_rows)
+    video_df["video_path"] = [str(p) for p in video_paths]
+
+    clinical_df = load_clinical_data(raw_data_dir)
+    video_df = video_df.merge(
+        clinical_df.rename(columns={"patient_id": "patient", "cov_test": "covid19"}),
+        on="patient",
+        how="left",
+    )
+
+    rows = list(video_df.itertuples(index=False))
+    train_rows, test_rows = partition_by_manifest(
+        rows, "COVID-BLUES", key=lambda row: Path(row.video_path).stem
+    )
+
+    typer.echo(f"Split: {len(train_rows)} train videos, {len(test_rows)} test videos.")
+
+    # The test splits are held in memory: 20 patients fit comfortably,
+    # and the ground-truth CSVs are built from their records.
+    test_records: list[dict] = []
+    test_resized_records: list[dict] = []
+    for row in tqdm(test_rows, desc="Processing test split"):
+        test_records.extend(
+            _records_from_video(
+                str(row.video_path), row.patient, row.blue_point, row.covid19
+            )
+        )
+        test_resized_records.extend(
+            _records_from_video(
+                str(row.video_path),
+                row.patient,
+                row.blue_point,
+                row.covid19,
+                size=size,
+            )
+        )
+
+    typer.echo(
+        f"Examples -- train: (streaming), "
+        f"test: {len(test_records)}, "
+        f"test.{size}: {len(test_resized_records)}"
+    )
+
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_generator(
+                _make_train_generator(train_rows),
+                features=DATASET_INFO.features,
+            ),
+            "test": Dataset.from_list(test_records, info=DATASET_INFO),
+            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
+        }
+    )
+
+    return BuildResult(dataset, test_records, test_resized_records)
+
+
 def process_covid_blues(
     raw_data_dir: Annotated[str, typer.Argument(help="The path to the raw data")],
     output_dir: Annotated[
@@ -307,99 +425,17 @@ def process_covid_blues(
     """
     verify_args(raw_data_dir, output_dir, publish)
 
-    raw_data_dir = os.path.join(raw_data_dir, "covid_blues")
     output_path = Path(output_dir) / OUTPUT_NAME
-
-    # Build per-video metadata DataFrame
-    video_paths = list(Path(raw_data_dir).glob("lus_videos/*.mp4"))
-    video_rows = [parse_video_filename(p) for p in video_paths]
-    video_df = pd.DataFrame(video_rows)
-    video_df["video_path"] = [str(p) for p in video_paths]
-
-    # Merge with clinical data to attach the covid19 label
-    clinical_df = load_clinical_data(raw_data_dir)
-    video_df = video_df.merge(
-        clinical_df.rename(columns={"patient_id": "patient", "cov_test": "covid19"}),
-        on="patient",
-        how="left",
-    )
-
-    # Reserve 20 patients for testing
-    splitter = GroupShuffleSplit(n_splits=1, test_size=20, random_state=42)
-    train_idx, test_idx = next(splitter.split(X=video_df, groups=video_df["patient"]))
-    train_df = video_df.iloc[train_idx].reset_index(drop=True)
-    test_df = video_df.iloc[test_idx].reset_index(drop=True)
-
-    typer.echo(
-        f"Split: {train_df['patient'].nunique()} train patients, "
-        f"{test_df['patient'].nunique()} test patients."
-    )
-
-    # Process test splits eagerly (20 patients, fits in memory)
-    test_records: list[dict] = []
-    test_resized_records: list[dict] = []
-    for row in tqdm(
-        test_df.itertuples(index=False),
-        desc="Processing test split",
-        total=len(test_df),
-    ):
-        test_records.extend(
-            _records_from_video(
-                str(row.video_path), row.patient, row.blue_point, row.covid19
-            )
-        )
-        test_resized_records.extend(
-            _records_from_video(
-                str(row.video_path),
-                row.patient,
-                row.blue_point,
-                row.covid19,
-                size=size,
-            )
-        )
-
-    typer.echo(
-        f"Examples — train: (streaming), "
-        f"test: {len(test_records)}, "
-        f"test.{size}: {len(test_resized_records)}"
-    )
-
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_generator(
-                _make_train_generator(train_df, raw_data_dir),
-                features=DATASET_INFO.features,
-            ),
-            "test": Dataset.from_list(test_records, info=DATASET_INFO),
-            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
-        }
-    )
-
-    dataset.save_to_disk(str(output_path))
-
-    for records, gt_dir in (
-        (test_records, output_path / "test"),
-        (test_resized_records, output_path / f"test.{size}"),
-    ):
-        generate_classification_ground_truth_from_records(
-            [
-                {
-                    "filename": r["filename"],
-                    "label": r["covid19"],
-                    "patient": r["patient"],
-                }
-                for r in records
-            ],
-            gt_dir / "ground_truth_classification.csv",
-            sequence_keys=["patient"],
-        )
+    result = build_covid_blues_dataset(raw_data_dir, size=size)
+    result.dataset.save_to_disk(str(output_path))
+    write_test_ground_truth(result, output_path, size, write_ground_truth)
 
     save_version_info(str(output_path), __version__)
 
     typer.echo(f"Dataset saved to {output_path}.")
 
     if publish:
-        dataset.push_to_hub(
+        result.dataset.push_to_hub(
             OUTPUT_NAME,
             commit_message=f"Update the dataset to revision {DATASET_REVISION}.",
             private=True,

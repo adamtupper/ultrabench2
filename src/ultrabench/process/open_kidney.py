@@ -60,18 +60,22 @@ from datasets import (
     Value,
 )
 from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 from typing_extensions import Annotated
 
+from ultrabench.datasets.utils import partition_by_manifest
+
 from .utils import (
     DATASET_REVISION,
+    IMAGE_SIZE,
+    BuildResult,
     generate_segmentation_ground_truth_from_records,
     ground_truth_commit_operations,
     resize_and_pad,
     save_version_info,
     to_3_channel,
     verify_revision_unpublished,
+    write_test_ground_truth,
 )
 
 __version__ = version("ultrabench")
@@ -258,6 +262,82 @@ def verify_args(raw_data_dir: str, output_dir: str, publish: bool = False) -> No
         verify_revision_unpublished(OUTPUT_NAME)
 
 
+def build_open_kidney_dataset(
+    raw_data_dir: str | Path, size: int = IMAGE_SIZE
+) -> BuildResult:
+    """Build the Open Kidney splits from the raw data.
+
+    The splits come from the tracked manifests rather than from a
+    stratified `train_test_split`, so that processing the raw data
+    reproduces the published splits exactly. The 20 duplicate images
+    are still dropped first, and the annotations of Sonographer 1 are
+    used throughout.
+
+    Args:
+        raw_data_dir: The path to the raw data directory.
+        size: The height and width of the resized test images.
+
+    Returns:
+        The processed splits and the test records the ground truth is
+        built from.
+
+    Raises:
+        ValueError: If the raw data is missing an example the manifests
+            list.
+    """
+    raw_data_dir = str(raw_data_dir)
+
+    metadata = pd.read_csv(os.path.join(raw_data_dir, CLINICAL_METADATA_FILE))
+    metadata["quality"] = metadata["file_attributes"].apply(
+        lambda x: ast.literal_eval(str(x)).get("Quality", None)
+    )
+    metadata["view"] = metadata["file_attributes"].apply(
+        lambda x: ast.literal_eval(str(x)).get("View", None)
+    )
+    metadata["comments"] = metadata["file_attributes"].apply(
+        lambda x: ast.literal_eval(str(x)).get("Comments", None)
+    )
+    metadata["transplant"] = metadata["comments"].apply(
+        lambda x: "transplant" in x.lower()
+    )
+    metadata["file_id"] = metadata["filename"].map(lambda x: x.split("_")[1])
+    metadata.drop(
+        columns=["file_attributes", "region_attributes", "region_shape_attributes"],
+        inplace=True,
+    )
+    metadata = metadata.drop_duplicates("file_id")
+
+    print(f"Total # of images: {len(metadata)}")
+
+    rows = [row for _, row in metadata.iterrows()]
+    train_rows, test_rows = partition_by_manifest(
+        rows, "OpenKidney", key=lambda row: Path(row["filename"]).stem
+    )
+
+    train_records = [
+        _process_open_kidney_example(row, raw_data_dir)
+        for row in tqdm(train_rows, desc="Processing train split")
+    ]
+    test_records = [
+        _process_open_kidney_example(row, raw_data_dir)
+        for row in tqdm(test_rows, desc="Processing test split")
+    ]
+    test_resized_records = [
+        _process_open_kidney_example(row, raw_data_dir, size=size)
+        for row in tqdm(test_rows, desc=f"Processing test.{size} split")
+    ]
+
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_list(train_records, info=DATASET_INFO),
+            "test": Dataset.from_list(test_records, info=DATASET_INFO),
+            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
+        }
+    )
+
+    return BuildResult(dataset, test_records, test_resized_records)
+
+
 def process_open_kidney(
     raw_data_dir: Annotated[str, typer.Argument(help="The path to the raw data")],
     output_dir: Annotated[
@@ -282,83 +362,14 @@ def process_open_kidney(
     verify_args(raw_data_dir, output_dir, publish)
 
     output_path = Path(output_dir) / OUTPUT_NAME
-
-    # Load metadata from CSV
-    metadata = pd.read_csv(os.path.join(raw_data_dir, CLINICAL_METADATA_FILE))
-    metadata["quality"] = metadata["file_attributes"].apply(
-        lambda x: ast.literal_eval(str(x)).get("Quality", None)
-    )
-    metadata["view"] = metadata["file_attributes"].apply(
-        lambda x: ast.literal_eval(str(x)).get("View", None)
-    )
-    metadata["comments"] = metadata["file_attributes"].apply(
-        lambda x: ast.literal_eval(str(x)).get("Comments", None)
-    )
-    metadata["transplant"] = metadata["comments"].apply(
-        lambda x: "transplant" in x.lower()
-    )
-    metadata["file_id"] = metadata["filename"].map(lambda x: x.split("_")[1])
-    metadata.drop(
-        columns=["file_attributes", "region_attributes", "region_shape_attributes"],
-        inplace=True,
-    )
-    metadata = metadata.drop_duplicates("file_id")
-
-    print(f"Total # of images: {len(metadata)}")
-
-    train_val_df, test_df = train_test_split(
-        metadata,
-        test_size=0.2,
-        random_state=42,
-        shuffle=True,
-        stratify=metadata["view"],
-    )
-
-    train_records = [
-        _process_open_kidney_example(row, raw_data_dir)
-        for _, row in tqdm(
-            train_val_df.iterrows(),
-            total=len(train_val_df),
-            desc="Processing train split",
-        )
-    ]
-    test_records = [
-        _process_open_kidney_example(row, raw_data_dir)
-        for _, row in tqdm(
-            test_df.iterrows(),
-            total=len(test_df),
-            desc="Processing test split",
-        )
-    ]
-    test_resized_records = [
-        _process_open_kidney_example(row, raw_data_dir, size=size)
-        for _, row in tqdm(
-            test_df.iterrows(),
-            total=len(test_df),
-            desc=f"Processing test.{size} split",
-        )
-    ]
-
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_list(train_records, info=DATASET_INFO),
-            "test": Dataset.from_list(test_records, info=DATASET_INFO),
-            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
-        }
-    )
-
-    dataset.save_to_disk(str(output_path))
-
-    write_ground_truth(test_records, output_path / "test", None)
-    write_ground_truth(test_resized_records, output_path / f"test.{size}", size)
-
-    print(f"# of training examples: {len(train_records)}")
-    print(f"# of test examples: {len(test_records)}")
+    result = build_open_kidney_dataset(raw_data_dir, size=size)
+    result.dataset.save_to_disk(str(output_path))
+    write_test_ground_truth(result, output_path, size, write_ground_truth)
 
     save_version_info(str(output_path), __version__)
 
     if publish:
-        dataset.push_to_hub(
+        result.dataset.push_to_hub(
             OUTPUT_NAME,
             commit_message=f"Update the dataset to revision {DATASET_REVISION}.",
             private=True,

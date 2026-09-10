@@ -50,8 +50,12 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 from typing_extensions import Annotated
 
+from ultrabench.datasets.utils import partition_by_manifest
+
 from .utils import (
     DATASET_REVISION,
+    IMAGE_SIZE,
+    BuildResult,
     generate_classification_ground_truth_from_records,
     generate_segmentation_ground_truth_from_records,
     ground_truth_commit_operations,
@@ -59,6 +63,7 @@ from .utils import (
     save_version_info,
     to_3_channel,
     verify_revision_unpublished,
+    write_test_ground_truth,
 )
 
 __version__ = version("ultrabench")
@@ -152,35 +157,55 @@ def generate_scan_mask(image: np.ndarray) -> np.ndarray:
     return mask.astype(np.uint8)
 
 
-def process_examples(
-    dataset_dir: str, split: str, size: int | None = None
-) -> list[dict]:
-    """Process the examples for a given split into record dicts.
+def read_split_names(dataset_dir: str) -> list[str]:
+    """Read every filename the raw dataset ships, across both splits.
 
     Args:
         dataset_dir: The path to the dataset directory.
-        split: The dataset split ("train" or "test").
+
+    Returns:
+        The filenames, without their extension.
+    """
+    names = []
+    for prefix in ("train", "val"):
+        with open(os.path.join(dataset_dir, "OTU_2d", f"{prefix}.txt"), "r") as file:
+            names.extend(file.read().splitlines())
+
+    return names
+
+
+def process_examples(
+    dataset_dir: str,
+    filenames: list[str],
+    desc: str,
+    size: int | None = None,
+) -> list[dict]:
+    """Process the named examples into record dicts.
+
+    Args:
+        dataset_dir: The path to the dataset directory.
+        filenames: The examples to process, without their extension.
+        desc: The label to show on the progress bar.
         size: If provided, resize and pad images and masks to
             size x size pixels.
 
     Returns:
         A list of example dictionaries with numpy array values.
     """
-    prefix = "train" if split == "train" else "val"
-
-    with open(os.path.join(dataset_dir, "OTU_2d", f"{prefix}.txt"), "r") as file:
-        filenames = file.read().splitlines()
-
-    label_df = pd.read_csv(
-        os.path.join(dataset_dir, "OTU_2d", f"{prefix}_cls.txt"),
-        delimiter="  ",
-        names=["image", "label"],
-        engine="python",
-    )
+    label_frames = [
+        pd.read_csv(
+            os.path.join(dataset_dir, "OTU_2d", f"{prefix}_cls.txt"),
+            delimiter="  ",
+            names=["image", "label"],
+            engine="python",
+        )
+        for prefix in ("train", "val")
+    ]
+    label_df = pd.concat(label_frames, ignore_index=True)
     label_df["image"] = label_df["image"].str.removesuffix(".JPG")
 
     examples = []
-    for filename in tqdm(filenames, desc=f"Processing {split} split"):
+    for filename in tqdm(filenames, desc=desc):
         image_path = os.path.join(dataset_dir, "OTU_2d", "images", f"{filename}.JPG")
         binary_mask_path = os.path.join(
             dataset_dir, "OTU_2d", "annotations", f"{filename}_binary.PNG"
@@ -258,6 +283,53 @@ def verify_args(raw_data_dir: str, output_dir: str, publish: bool = False) -> No
         verify_revision_unpublished(OUTPUT_NAME)
 
 
+def build_mmotu_dataset(
+    raw_data_dir: str | Path, size: int = IMAGE_SIZE
+) -> BuildResult:
+    """Build the MMOTU-2D splits from the raw data.
+
+    The splits come from the tracked manifests rather than from the
+    dataset's own split files, so that processing the raw data
+    reproduces the published splits exactly even if the raw files
+    change.
+
+    Args:
+        raw_data_dir: The path to the raw data directory.
+        size: The height and width of the resized test images.
+
+    Returns:
+        The processed splits and the test records the ground truth is
+        built from.
+
+    Raises:
+        ValueError: If the raw data is missing an example the manifests
+            list.
+    """
+    raw_data_dir = str(raw_data_dir)
+
+    train_names, test_names = partition_by_manifest(
+        read_split_names(raw_data_dir), "MMOTU", key=lambda name: name
+    )
+
+    train_records = process_examples(
+        raw_data_dir, train_names, "Processing train split"
+    )
+    test_records = process_examples(raw_data_dir, test_names, "Processing test split")
+    test_resized_records = process_examples(
+        raw_data_dir, test_names, f"Processing test.{size} split", size=size
+    )
+
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_list(train_records, info=DATASET_INFO),
+            "test": Dataset.from_list(test_records, info=DATASET_INFO),
+            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
+        }
+    )
+
+    return BuildResult(dataset, test_records, test_resized_records)
+
+
 def process_mmotu(
     raw_data_dir: Annotated[str, typer.Argument(help="The path to the raw data")],
     output_dir: Annotated[
@@ -281,28 +353,15 @@ def process_mmotu(
     """
     verify_args(raw_data_dir, output_dir, publish)
 
-    train_records = process_examples(raw_data_dir, "train")
-    test_records = process_examples(raw_data_dir, "test")
-    test_resized_records = process_examples(raw_data_dir, "test", size=size)
-
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_list(train_records, info=DATASET_INFO),
-            "test": Dataset.from_list(test_records, info=DATASET_INFO),
-            f"test.{size}": Dataset.from_list(test_resized_records, info=DATASET_INFO),
-        }
-    )
-
     output_path = Path(output_dir) / OUTPUT_NAME
-    dataset.save_to_disk(str(output_path))
-
-    write_ground_truth(test_records, output_path / "test", None)
-    write_ground_truth(test_resized_records, output_path / f"test.{size}", size)
+    result = build_mmotu_dataset(raw_data_dir, size=size)
+    result.dataset.save_to_disk(str(output_path))
+    write_test_ground_truth(result, output_path, size, write_ground_truth)
 
     save_version_info(str(output_path), __version__)
 
     if publish:
-        dataset.push_to_hub(
+        result.dataset.push_to_hub(
             OUTPUT_NAME,
             commit_message=f"Update the dataset to revision {DATASET_REVISION}.",
             private=True,

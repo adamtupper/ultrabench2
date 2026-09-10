@@ -259,7 +259,7 @@ class TestCacheDir:
         """An explicit cache directory also holds the Hub downloads."""
         load_dataset("AUL", cache_dir=tmp_path)
 
-        assert fake_hub[0]["cache_dir"] == tmp_path / "_hub"
+        assert fake_hub[0]["cache_dir"] == str(tmp_path / "_hub")
 
     def test_forwards_the_cache_directory_to_a_loader(self, tmp_path, fake_loaders):
         """A raw or local loader caches where it was told to."""
