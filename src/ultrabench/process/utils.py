@@ -16,10 +16,8 @@ from tqdm.auto import tqdm
 from datasets import DatasetDict
 
 from ultrabench.core.aggregation import format_sequence_id
+from ultrabench.datasets.registry import IMAGE_SIZE  # noqa: F401
 from ultrabench.core.rle import mask_to_rle
-
-IMAGE_SIZE = 256
-"""The default height and width of the resized test images."""
 
 MAX_TRAIN_SAMPLES = 1000
 """The maximum number of examples in a published training split."""

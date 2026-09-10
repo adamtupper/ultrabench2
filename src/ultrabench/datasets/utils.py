@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, TypeVar
 
 from datasets import Dataset, DatasetDict, load_from_disk
 
+from .registry import IMAGE_SIZE
+
 if TYPE_CHECKING:
     from ultrabench.process.utils import BuildResult
 
@@ -26,9 +28,6 @@ CACHE_ENV_VAR = "ULTRABENCH_CACHE"
 
 DEFAULT_CACHE_DIR = Path.home() / ".ultrabench"
 """Where processed datasets are cached when nothing else is set."""
-
-IMAGE_SIZE = 256
-"""The height and width the test split is resized to."""
 
 KEY_LENGTH = 12
 """The number of hex characters a cache key is truncated to."""

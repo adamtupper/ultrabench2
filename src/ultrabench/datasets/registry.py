@@ -29,7 +29,10 @@ DatasetName = Literal[
     "OpenKidney",
 ]
 
-DEFAULT_SPLITS = ("train", "test", "test.256")
+IMAGE_SIZE = 256
+"""The height and width the test split is resized to."""
+
+DEFAULT_SPLITS = ("train", "test", f"test.{IMAGE_SIZE}")
 """The splits every dataset in the collection publishes."""
 
 
