@@ -5,7 +5,6 @@ import typer
 from .download import (
     download_aul,
     download_busbra,
-    download_butterfly,
     download_camus,
     download_covid_blues,
     download_fetal_planes,
@@ -17,7 +16,6 @@ from .download import (
 from .process import (
     process_aul,
     process_busbra,
-    process_butterfly,
     process_camus,
     process_covid_blues,
     process_fetal_planes,
@@ -52,7 +50,6 @@ app.add_typer(process_app, name="process")
 _DOWNLOADABLE = [
     ("aul", download_aul),
     ("busbra", download_busbra),
-    ("butterfly", download_butterfly),
     ("camus", download_camus),
     ("covid-blues", download_covid_blues),
     ("fetal-planes", download_fetal_planes),
@@ -69,7 +66,6 @@ _ALL = [
     ("covid-blues", process_covid_blues),
     ("fetal-planes", process_fetal_planes),
     ("busbra", process_busbra),
-    ("butterfly", process_butterfly),
     ("camus", process_camus),
     ("masld", process_masld),
     ("gbcu", process_gbcu),

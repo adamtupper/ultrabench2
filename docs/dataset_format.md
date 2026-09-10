@@ -15,7 +15,6 @@ Downloadable datasets:
 | Dataset | Command |
 |---------|---------|
 | AUL | `ultrabench download aul <output_dir>` |
-| Butterfly | `ultrabench download butterfly <output_dir>` |
 | CAMUS | `ultrabench download camus <output_dir>` |
 | MASLD | `ultrabench download masld <output_dir>` |
 | POCUS | `ultrabench download pocus <output_dir>` |
@@ -36,12 +35,11 @@ ultrabench process <dataset> <raw_dir> <output_dir> [--size 256] [--publish]
 - `--size`: Target height and width (in pixels) for test images (default: `256`).
 - `--publish`: Push the processed dataset to the Hugging Face Hub.
 
-All 10 datasets are supported:
+All 9 datasets are supported:
 
 | Dataset | Command |
 |---------|---------|
 | AUL | `ultrabench process aul <raw_dir> <output_dir>` |
-| Butterfly | `ultrabench process butterfly <raw_dir> <output_dir>` |
 | CAMUS | `ultrabench process camus <raw_dir> <output_dir>` |
 | MASLD | `ultrabench process MASLD <raw_dir> <output_dir>` |
 | GBCU | `ultrabench process gbcu <raw_dir> <output_dir>` |

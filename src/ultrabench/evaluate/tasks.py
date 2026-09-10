@@ -33,7 +33,6 @@ SEQUENCE_PREFIX = "seq_"
 
 EXCLUDED_TASKS = frozenset(
     {
-        "butterfly_classification",
         "pocus_classification",
         "stanford_thyroid_segmentation",
     }

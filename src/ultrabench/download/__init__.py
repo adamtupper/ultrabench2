@@ -1,7 +1,6 @@
 # ruff: noqa: F401
 from .aul import download_aul
 from .busbra import download_busbra
-from .butterfly import download_butterfly
 from .camus import download_camus
 from .covid_blues import download_covid_blues
 from .fetal_planes import download_fetal_planes
