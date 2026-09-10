@@ -3,7 +3,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2501.13193-b31b1b.svg)](http://arxiv.org/abs/2501.13193)
 [![OpenReview](https://img.shields.io/badge/OpenReview-Reviews-blue.svg)](https://openreview.net/forum?id=iGcxlTLIL5)
 
-UltraBench is a standardized benchmark of 14 different convex ultrasound image classification and semantic segmentation tasks (7 classification and 7 segmentation tasks) drawn from the 10 different publicly available datasets covering 11 regions of the body. This repository contains the processing scripts to transform raw datasets from their original sources into a standardized format for training and evaluating machine learning models.
+UltraBench is a standardized benchmark of 21 convex ultrasound image classification and semantic segmentation tasks drawn from 12 publicly available datasets covering 11 regions of the body. This repository contains the datasets, the downstream training framework, and the evaluation layer used to train and score machine learning models on them.
 
 This benchmark was published alongside the article [Revisiting Data Augmentation for Ultrasound Images](https://openreview.net/forum?id=iGcxlTLIL5). If you use this benchmark in your research please cite this article and the articles for each of the included datasets. Instructions for how to do so are provided at the end.
 
@@ -23,26 +23,46 @@ See [Contributing](#contributing) for instructions on setting up a development e
 
 ## Getting Started
 
-UltraBench is packaged as a commandline application. After installing, run
-`ultrabench --help` to get started.
+Load any dataset in the collection with one function:
+
+```python
+import ultrabench
+
+train_data = ultrabench.load_dataset(name="AUL", split="train", revision="0.4")
+```
+
+Most datasets are published preprocessed and download ready to use. A few cannot be republished in that form, so `load_dataset` preprocesses them on your machine the first time and caches the result. Two of those cannot be republished at all, so you download the raw data yourself and pass its directory:
+
+```python
+train_data = ultrabench.load_dataset(name="GBCU", path="path/to/raw/data")
+```
+
+See [the dataset documentation](docs/dataset_format.md) for the three kinds of dataset, where the cache lives, and how to pin a revision.
+
+UltraBench is also packaged as a commandline application, for preprocessing raw datasets and publishing them. After installing, run `ultrabench --help` to get started.
 
 For more information, checkout the [Documentation](https://github.com/adamtupper/ultrabench/wiki) on the wiki!
 
 ## Current Datasets & Tasks
 
-The following table contains the list of supported datasets and tasks. Click on the links to checkout the appropriate sections of the documentation or on the article/repository links to visit the original publications. We do not have the rights to republish the datasets, but links to the original articles and datasets are included here and in the [Documentation](https://github.com/adamtupper/ultrabench/wiki).
+The following table contains the list of supported datasets and tasks. Click on the article and data links to visit the original publications.
 
-<!-- TODO: Add links to documentation -->
+The **Access** column says how each dataset reaches you. *Processed* datasets are published ready to use. *Raw* datasets may be redistributed unmodified but not preprocessed, so `load_dataset` downloads the original files and preprocesses them on your machine. *Local* datasets may not be redistributed at all, so you download them from the original source and pass the directory as `path`.
 
-| Dataset                                                   | Region       | Classification Tasks             | Segmentation Tasks                          |
-|-----------------------------------------------------------|--------------|----------------------------------|---------------------------------------------|
-| Annotated Ultrasound Liver ([article](https://doi.org/10.1093/bib/bbac569), [data](https://zenodo.org/records/7272660))                      | Liver        | Liver mass classification        | Liver segmentation, Liver mass segmentation |
-| CAMUS ([article](https://ieeexplore.ieee.org/document/8649738/), [data](https://www.creatis.insa-lyon.fr/Challenge/camus/index.html))                                           | Heart        | Image quality classification     | Cardiac region segmentation                 |
-| Dataset of B-mode fatty liver ultrasound images ([article](https://link.springer.com/article/10.1007/s11548-018-1843-2), [data](https://zenodo.org/records/1009146)) | Liver        | NFLD classification              |                                             |
-| Gallbladder Cancer Ultrasound (GBCU) ([article](https://ieeexplore.ieee.org/document/9879895), [data](https://gbc-iitd.github.io/data/gbcu))            | Gallbladder  | Gallbladder tumor classification |                                             |
-| Multi-Modality Ovarian Tumor Ultrasound (MMOTU) ([article](http://arxiv.org/abs/2207.06799), [data](https://github.com/cv516Buaa/MMOTU_DS2Net)) | Ovaries      | Ovarian tumor classifcation      | Ovarian tumor segmentation                  |
-| Open Kidney Ultrasound ([article](https://link.springer.com/chapter/10.1007/978-3-031-44521-7_15), [data](https://rsingla.ca/kidneyUS/))                          | Kidney       |                                  | Kidney capsule segmentation                 |
-| PSFHS ([article](https://www.nature.com/articles/s41597-024-03266-4), [data](https://zenodo.org/records/10969427))                                           | Fetus        |                                  | Fetal head and pubic symphysis segmentation |
+| Dataset | Access | Region | Classification Tasks | Segmentation Tasks |
+|---------|--------|--------|----------------------|--------------------|
+| Annotated Ultrasound Liver ([article](https://doi.org/10.1093/bib/bbac569), [data](https://zenodo.org/records/7272660)) | Processed | Liver | Liver mass classification | Liver segmentation, Liver mass segmentation |
+| BUS-BRA ([article](https://doi.org/10.1002/mp.16812), [data](https://zenodo.org/records/8231412)) | Processed | Breast | Histology classification, Pathology classification | Breast lesion segmentation |
+| CAMUS ([article](https://ieeexplore.ieee.org/document/8649738/), [data](https://www.creatis.insa-lyon.fr/Challenge/camus/index.html)) | Processed | Heart | Image quality classification | Cardiac region segmentation |
+| COVID-BLUES ([article](https://doi.org/10.1109/TUFFC.2025.3535879), [data](https://github.com/NinaWie/COVID-BLUES)) | Raw | Lungs | COVID-19 classification | |
+| Fetal Planes ([article](https://www.nature.com/articles/s41598-020-67076-5), [data](https://zenodo.org/records/3904280)) | Processed | Fetus | Plane classification, Brain plane classification | |
+| Gallbladder Cancer Ultrasound ([article](https://ieeexplore.ieee.org/document/9879895), [data](https://gbc-iitd.github.io/data/gbcu)) | Local | Gallbladder | Gallbladder tumour classification | |
+| MASLD ([article](https://link.springer.com/article/10.1007/s11548-018-1843-2), [data](https://zenodo.org/records/1009146)) | Processed | Liver | Steatosis classification | |
+| MMOTU ([article](http://arxiv.org/abs/2207.06799), [data](https://github.com/cv516Buaa/MMOTU_DS2Net)) | Raw | Ovaries | Ovarian tumour classification | Ovarian tumour segmentation |
+| Open Kidney Ultrasound ([article](https://link.springer.com/chapter/10.1007/978-3-031-44521-7_15), [data](https://rsingla.ca/kidneyUS/)) | Local | Kidney | | Kidney capsule segmentation, Kidney region segmentation |
+| PSFHS ([article](https://www.nature.com/articles/s41597-024-03266-4), [data](https://zenodo.org/records/10969427)) | Processed | Fetus | | Fetal head and pubic symphysis segmentation |
+| STMUS ([data](https://data.mendeley.com/datasets/3jykz7wz8d)) | Processed | Muscle | | Muscle segmentation |
+| TN3K ([article](https://doi.org/10.1016/j.compbiomed.2022.106389), [data](https://github.com/haifangong/TRFE-Net-for-thyroid-nodule-segmentation)) | Processed | Thyroid | Thyroid nodule classification | Thyroid nodule segmentation |
 
 ## Contributing
 

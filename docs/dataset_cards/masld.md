@@ -59,11 +59,19 @@ See [the evaluation documentation](../evaluation.md) for the CSV format.
 
 ## Usage
 
-The easiest way to use this dataset is with [Hugging Face Datasets library](https://huggingface.co/docs/datasets/index):
+Load this dataset with `ultrabench.load_dataset`, which returns a Hugging Face [`DatasetDict`](https://huggingface.co/docs/datasets/index):
 
 ```python
-from datasets import load_dataset
+import ultrabench
 
-train_data = datasets.load_dataset("UltraBench/MASLD", revision="0.3", split="train")
-test_data = datasets.load_dataset("UltraBench/MASLD", revision="0.3", split="test.256")
+train_data = ultrabench.load_dataset(
+    name="MASLD",
+    split="train",
+    revision="0.4",
+)
+test_data = ultrabench.load_dataset(
+    name="MASLD",
+    split="test.256",
+    revision="0.4",
+)
 ```
