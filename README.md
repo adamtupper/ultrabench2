@@ -1,22 +1,16 @@
-# UltraBench
+# UltraBench 2
 
-[![arXiv](https://img.shields.io/badge/arXiv-2501.13193-b31b1b.svg)](http://arxiv.org/abs/2501.13193)
-[![OpenReview](https://img.shields.io/badge/OpenReview-Reviews-blue.svg)](https://openreview.net/forum?id=iGcxlTLIL5)
-
-UltraBench is a standardized benchmark of 21 convex ultrasound image classification and semantic segmentation tasks drawn from 12 publicly available datasets covering 11 regions of the body. This repository contains the datasets, the downstream training framework, and the evaluation layer used to train and score machine learning models on them.
-
-This benchmark was published alongside the article [Revisiting Data Augmentation for Ultrasound Images](https://openreview.net/forum?id=iGcxlTLIL5). If you use this benchmark in your research please cite this article and the articles for each of the included datasets. Instructions for how to do so are provided at the end.
-
-## Motivation
-
-A common limitation of studies on ultrasound image analysis using machine learning is a lack of evaluations across multiple domains. However, this is made difficult by a lack of ultrasound image analysis tasks in existing medical image analysis benchmarks, such as [MedMNIST](https://www.nature.com/articles/s41597-022-01721-8), [MedSegBench](https://www.nature.com/articles/s41597-024-04159-2) and the [Medical Segmentation Decathlon](https://www.nature.com/articles/s41467-022-30695-9). To address this issue, we created UltraBench. Our aim is to make it easier for researchers by standardizing the preprocessing of many publicly available ultrasound datasets and providing tools (e.g., dataset implementations for common deep learning frameworks) that (a) reduce the effort required to use them and (b) make it easier for researchers to compare results between papers.
+UltraBench 2 is a standardized benchmark of 21 convex ultrasound image classification and semantic segmentation tasks drawn from 12 publicly available datasets covering 10 regions of the body. This repository contains the datasets, the downstream training framework, and the evaluation layer used to train and score machine learning models on them.
 
 ## Installation
 
-Install the latest version of UltraBench from PyPI using:
+Install UltraBench 2 from source:
 
 ```bash
-pip install ultrabench
+uv sync --group dev --group training  # Install optional dependencies, if required
+source .venv/bin/activate
+nbstripout --install
+pre-commit install
 ```
 
 See [Contributing](#contributing) for instructions on setting up a development environment.
@@ -26,22 +20,64 @@ See [Contributing](#contributing) for instructions on setting up a development e
 Load any dataset in the collection with one function:
 
 ```python
-import ultrabench
+import ultrabench2
 
-train_data = ultrabench.load_dataset(name="AUL", split="train", revision="0.4")
+train_data = ultrabench2.load_dataset(name="AUL", split="train", revision="0.4")
 ```
 
 Most datasets are published preprocessed and download ready to use. A few cannot be republished in that form, so `load_dataset` preprocesses them on your machine the first time and caches the result. Two of those cannot be republished at all, so you download the raw data yourself and pass its directory:
 
 ```python
-train_data = ultrabench.load_dataset(name="GBCU", path="path/to/raw/data")
+train_data = ultrabench2.load_dataset(name="GBCU", path="path/to/raw/data")
 ```
 
 See [the dataset documentation](docs/dataset_format.md) for the three kinds of dataset, where the cache lives, and how to pin a revision.
 
-UltraBench is also packaged as a commandline application, for preprocessing raw datasets and publishing them. After installing, run `ultrabench --help` to get started.
+UltraBench is also packaged as a commandline application, for preprocessing raw datasets and publishing them. After installing, run `ultrabench2 --help` to get started.
 
-For more information, checkout the [Documentation](https://github.com/adamtupper/ultrabench/wiki) on the wiki!
+## Leaderboard
+
+The following table ranks the evaluated ultrasound foundation models by their average score across the four task categories. Each score is the mean over the tasks in that category, measured with macro F1 for classification and positive Dice for segmentation, under the full fine-tuning paradigm. The best score in each category is bold.
+
+Read the scores of a model pretrained on data that overlaps a category's tasks with care. See [the evaluation protocol](docs/evaluation_protocol.md) for the task categories, the metrics, and how the scores are aggregated.
+
+| Model | Pathological (classification) | Non-pathological (classification) | Pathological (segmentation) | Anatomical (segmentation) |
+|-------|-------------------------------|-----------------------------------|-----------------------------|---------------------------|
+| URFM-L | **0.645** | **0.757** | 0.782 | 0.822 |
+| URFM-B | 0.620 | 0.744 | 0.770 | 0.821 |
+| OpenUS | 0.606 | 0.735 | 0.763 | 0.822 |
+| DINOv3 ViT-L | 0.583 | 0.710 | 0.774 | 0.815 |
+| DINOv3 ViT-B | 0.574 | 0.716 | 0.768 | 0.811 |
+| USF-MAE | 0.600 | 0.735 | 0.717 | 0.813 |
+| Deblurring ConvMAE | 0.600 | 0.683 | 0.759 | 0.811 |
+| DINOv3 ConvNeXt-L | 0.552 | 0.670 | **0.794** | 0.822 |
+| DINOv3 ConvNeXt-B | 0.551 | 0.677 | 0.780 | 0.820 |
+| Deblurring MAE | 0.589 | 0.679 | 0.747 | 0.810 |
+| UltraFedFM | 0.617 | 0.684 | 0.715 | 0.807 |
+| USFM | 0.575 | 0.678 | 0.745 | 0.813 |
+| SAMUS | 0.564 | 0.644 | 0.776 | **0.826** |
+| UltraSAM | 0.584 | 0.679 | 0.724 | 0.809 |
+| EchoCare | 0.549 | 0.671 | 0.712 | 0.801 |
+| TinyUSFM | 0.540 | 0.641 | 0.690 | 0.801 |
+
+## Submissions
+
+Add a model to the leaderboard by opening a pull request against `main`. A maintainer reviews every submission before merging it.
+
+Produce the scores with the evaluation layer, following [the evaluation protocol](docs/evaluation_protocol.md):
+
+1. Train the model on every task of the benchmark under the full fine-tuning paradigm, with five seeds per task. A category score covers all of the tasks in that category, so a missing task leaves the category unscored.
+2. Write the test split predictions of each run to a prediction CSV and score them against the published ground truth. See [the evaluation documentation](docs/evaluation.md) for the CSV format and the commands.
+3. Average each task's metric over the five runs, then take the unweighted mean of the tasks in each category.
+
+Your pull request adds one row to the [leaderboard](#leaderboard) table:
+
+- Report the four category scores to three decimal places.
+- Place the row in the position its average of the four scores earns it.
+- Link the model name to the public repository for the model, so that readers reach the weights and the code that produced the scores.
+- Move the bold in any column your model now leads, so that each column still marks its best score.
+
+Describe how you trained the model in the pull request, and state which benchmark datasets, if any, appear in its pretraining data. A reviewer checks the row against the linked repository and asks for the per-task scores where a number needs verifying.
 
 ## Current Datasets & Tasks
 
@@ -63,37 +99,3 @@ The **Access** column says how each dataset reaches you. *Processed* datasets ar
 | PSFHS ([article](https://www.nature.com/articles/s41597-024-03266-4), [data](https://zenodo.org/records/10969427)) | Processed | Fetus | | Fetal head and pubic symphysis segmentation |
 | STMUS ([data](https://data.mendeley.com/datasets/3jykz7wz8d)) | Processed | Muscle | | Muscle segmentation |
 | TN3K ([article](https://doi.org/10.1016/j.compbiomed.2022.106389), [data](https://github.com/haifangong/TRFE-Net-for-thyroid-nodule-segmentation)) | Processed | Thyroid | Thyroid nodule classification | Thyroid nodule segmentation |
-
-## Contributing
-
-We would love for this benchmark to grow and flourish into a resource that anyone with an interest in machine learning for ultrasound analysis can pick up and use quickly and easily. Any help addressing bugs, contributing new datasets or tasks, or any other improvements are welcome and appreciated! I only ask that you respect the community guidelines laid out in the `CODE_OF_CONDUCT.md`. For more information on how to contribute, checkout out the [Documentation](https://github.com/adamtupper/ultrabench/wiki).
-
-UltraBench is built using [uv](https://docs.astral.sh/uv/). For the best experience, you can use the development container configuration (see [DEVCONTAINER.md](/.devcontainer/DEVCONTAINER.md)) to setup an isolated development environment with uv and all the necessary dependencies already installed. Otherwise, you can [install uv](https://docs.astral.sh/uv/getting-started/installation/) and then following the commands below. To ensure that your code meets the style guidelines etc., this also installs and initializes the optional development dependencies.
-
-```bash
-uv sync --group dev --group training  # Install optional dependencies, if required
-source .venv/bin/activate
-nbstripout --install
-pre-commit install
-```
-
-## Questions
-
-If you have any questions, please open an issue or contact us via email.
-
-## How to Cite UltraBench
-
-If you use UltraBench in your research, please cite our article [Revisiting Data Augmentation for Ultrasound Images](https://openreview.net/forum?id=iGcxlTLIL5) and the articles for each of the datasets. This ensures that the work of the authors of the original datasets is properly acknowledged, helps more people find the benchmark and encourages us to continue maintaining and improving it!
-
-```
-@article{
-  tupper2025,
-  title={Revisiting Data Augmentation for Ultrasound Images},
-  author={Adam Tupper and Christian Gagn{\'e}},
-  journal={Transactions on Machine Learning Research},
-  issn={2835-8856},
-  year={2025},
-  url={https://openreview.net/forum?id=iGcxlTLIL5},
-  note={}
-}
-```
