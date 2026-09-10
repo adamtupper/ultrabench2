@@ -1,15 +1,41 @@
 """Data utilities."""
 
 from functools import partial
+from pathlib import Path
 
 import albumentations as A
-import datasets
 import numpy as np
 from datasets import Dataset
 from sklearn.model_selection import GroupShuffleSplit
 
 from ultrabench.core.aggregation import join_sequence_values
+from ultrabench.datasets import load_dataset
 from ultrabench.training.data.transforms import albumentations_transforms
+
+TEST_SPLIT = "test.256"
+"""The test split downstream training and evaluation both use."""
+
+
+def resolve_task_path(path: str | None, data_dir: str) -> str | None:
+    """Resolve a task's raw data path against the run's data directory.
+
+    A local dataset cannot be published, so its task config names the
+    directory its raw data was staged into. A relative path is taken to
+    be relative to the data directory; an absolute one is used as given,
+    so that a command-line override still works.
+
+    Args:
+        path: The path from the task config, or None for a dataset that
+            does not need one.
+        data_dir: The run's data directory.
+
+    Returns:
+        The resolved path, or None if the task named none.
+    """
+    if path is None:
+        return None
+
+    return str(Path(data_dir) / path)
 
 
 def train_test_split(
@@ -84,7 +110,7 @@ def add_sequence_id(data: Dataset, sequence_by: list[str]) -> Dataset:
 
 
 def get_splits(
-    path: str,
+    name: str,
     input_key: str,
     target_key: str,
     train_transform: A.Compose,
@@ -96,12 +122,14 @@ def get_splits(
     sequence_by: list[str] | None = None,
     subset: str | None = None,
     revision: str | None = None,
+    path: str | None = None,
+    cache_dir: str | None = None,
 ) -> tuple[Dataset, Dataset, Dataset]:
-    """Get the train, val and test splits for a Hugging Face dataset.
+    """Get the train, val and test splits for an UltraBench dataset.
 
     Args:
-        path: The path to a local directory or dataset repository on the
-            Hugging Face Hub.
+        name: The dataset to load, as registered in
+            `ultrabench.datasets`.
         input_key: The column of the the dataset containing the input
             images.
         target_key: The column of the dataset containing the target
@@ -126,12 +154,21 @@ def get_splits(
         subset: Optional subset/configuration of the dataset to load.
         revision: Optional Git revision (branch, tag or commit) of the
             dataset to load. Defaults to the latest revision.
+        path: The directory a local dataset's raw data was staged into.
+            Required for GBCU and Open Kidney, which are not published.
+        cache_dir: The directory to cache processed datasets in.
+            Defaults to $ULTRABENCH_CACHE, then `~/.ultrabench`.
 
     Returns:
         The train, val and test splits.
     """
-    train_val_data = datasets.load_dataset(
-        path, name=subset, split="train", revision=revision
+    train_val_data = load_dataset(
+        name,
+        path=path,
+        subset=subset,
+        split="train",
+        revision=revision,
+        cache_dir=cache_dir,
     )
 
     if filter_by is not None:
@@ -143,8 +180,13 @@ def get_splits(
         stratify_by=stratify_by,
         group_by=group_by,
     )
-    test_data = datasets.load_dataset(
-        path, name=subset, split="test.256", revision=revision
+    test_data = load_dataset(
+        name,
+        path=path,
+        subset=subset,
+        split=TEST_SPLIT,
+        revision=revision,
+        cache_dir=cache_dir,
     )
 
     train_data = train_data.rename_columns(

@@ -27,7 +27,7 @@ from ultrabench.training.heads.cls_heads import get_cls_head
 from ultrabench.training.heads.seg_heads import get_seg_head
 
 from .data.transforms import get_train_test_transforms
-from .data.utils import get_splits
+from .data.utils import get_splits, resolve_task_path
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class UltraBenchDataModule(pl.LightningDataModule):
 
     def __init__(
         self,
-        path: str,
+        name: str,
         subset: str | None,
         input_key: str,
         target_key: str,
@@ -51,9 +51,13 @@ class UltraBenchDataModule(pl.LightningDataModule):
         num_workers: int,
         sequence_by: list[str] | None = None,
         revision: str | None = None,
+        path: str | None = None,
+        cache_dir: str | None = None,
     ):
         super().__init__()
+        self.name = name
         self.path = path
+        self.cache_dir = cache_dir
         self.subset = subset
         self.revision = revision
         self.input_key = input_key
@@ -72,7 +76,9 @@ class UltraBenchDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         self.train_dataset, self.val_dataset, self.test_dataset = get_splits(
+            name=self.name,
             path=self.path,
+            cache_dir=self.cache_dir,
             subset=self.subset,
             revision=self.revision,
             input_key=self.input_key,
@@ -681,7 +687,11 @@ class DownstreamPipeline:
         )
 
         datamodule = UltraBenchDataModule(
-            path=cfg.task.dataset,  # ty:ignore[unresolved-attribute]
+            name=cfg.task.name,  # ty:ignore[unresolved-attribute]
+            path=resolve_task_path(
+                cfg.task.get("path"),  # ty:ignore[unresolved-attribute]
+                self.data_dir,
+            ),
             subset=cfg.task.subset,  # ty:ignore[unresolved-attribute]
             revision=cfg.task.revision,  # ty:ignore[unresolved-attribute]
             input_key=cfg.task.input,  # ty:ignore[unresolved-attribute]
