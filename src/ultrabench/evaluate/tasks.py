@@ -50,6 +50,9 @@ class TaskSpec:
         num_classes: The number of classes, including the background for
             segmentation tasks.
         dataset: The Hugging Face dataset the task comes from.
+        dataset_name: The name the task's dataset is registered under in
+            `ultrabench.datasets`, or None for a config that predates the
+            registry.
         subset: The dataset subset, or None if the dataset has only one.
         revision: The pinned dataset revision.
         target_key: The dataset column holding the label or mask.
@@ -67,6 +70,7 @@ class TaskSpec:
     target_key: str
     sequence_by: tuple[str, ...] | None
     image_size: int = DEFAULT_IMAGE_SIZE
+    dataset_name: str | None = None
 
     @property
     def primary_metric(self) -> str:
@@ -135,6 +139,7 @@ def load_task_specs(config_dir: Path = TASK_CONFIG_DIR) -> dict[str, TaskSpec]:
             task_type=config["type"],
             num_classes=config["num_classes"],
             dataset=config["dataset"],
+            dataset_name=config.get("name"),
             subset=config.get("subset"),
             revision=config.get("revision"),
             target_key=config["target"],

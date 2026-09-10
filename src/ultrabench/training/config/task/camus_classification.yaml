@@ -1,4 +1,5 @@
 dataset: UltraBench/CAMUS
+name: CAMUS
 subset: classification
 revision: "0.4"
 

@@ -1,4 +1,6 @@
 dataset: UltraBench/OpenKidney
+name: OpenKidney
+path: raw/kidneyUS
 subset: null
 revision: "0.4"
 

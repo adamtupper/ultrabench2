@@ -1,4 +1,6 @@
 dataset: UltraBench/GBCU
+name: GBCU
+path: raw/GBCU-Shared
 subset: null
 revision: "0.4"
 
