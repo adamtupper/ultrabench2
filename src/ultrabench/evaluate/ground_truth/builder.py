@@ -1,15 +1,16 @@
 """Generation of the ground-truth CSVs used to score predictions.
 
 Ground truth is built from the `test.256` split published for each
-dataset rather than from the ground-truth CSVs published alongside it.
-Those published segmentation CSVs encode full-resolution masks despite
-their `test.256` name, so scoring 256x256 predictions against them
-silently produces a near-zero Dice score.
+dataset rather than from the ground-truth CSVs published alongside it,
+because the CSVs of revisions 0.1 to 0.3 cannot be scored. Their
+segmentation masks are encoded at full resolution despite their
+`test.256` name, which silently produces a near-zero Dice score, and
+CAMUS publishes an un-prefixed classification CSV that predates the
+`sequence_id` column needed to pool frames into sequences.
 
-The published classification CSVs are usable, but CAMUS publishes two of
-them and only the subset-prefixed one carries the `sequence_id` column
-needed to pool frames into sequences. Building every ground truth here
-sidesteps both traps.
+Revision 0.4 publishes a correct CSV per test split, so this module is
+only needed by experiments pinned to an earlier revision. See
+`docs/evaluation.md`.
 """
 
 import csv

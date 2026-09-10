@@ -20,7 +20,9 @@ Results are written to the Hydra run directory:
 
 ## Ground-truth CSVs
 
-Each dataset publishes its ground truth alongside the images on the Hugging Face Hub. The files cover the `test` split only, since evaluation is test-only.
+Each dataset publishes its ground truth alongside the images on the Hugging Face Hub. Evaluation is test-only, so the files cover the two test splits: `test-ground-truth-<task>.csv` describes the original-resolution `test` split, and `test.256-ground-truth-<task>.csv` describes the `test.256` split. A dataset with subsets prefixes the subset name, as in `segmentation-test.256-ground-truth-segmentation.csv`.
+
+Score your predictions against the split you predicted on. A segmentation CSV encodes its masks at the resolution of its own split, so scoring `test.256` predictions against the full-resolution ground truth gives a near-zero Dice score rather than an error.
 
 | Column | Task | Description |
 | ------ | ---- | ----------- |
@@ -29,6 +31,18 @@ Each dataset publishes its ground truth alongside the images on the Hugging Face
 | `sequence_id` | Classification | The sequence the image belongs to. Present only for tasks with sequence-level labels. |
 | `class_id` | Segmentation | The foreground class index. Background (0) is omitted. |
 | `encoded_pixels` | Segmentation | The run-length encoded binary mask for that class, or an empty string. |
+
+### Revisions before 0.4
+
+Do not use the ground truth published with revisions `0.1` to `0.3`. Two defects make those files unusable: the segmentation CSVs encode full-resolution masks despite their `test.256` name, and CAMUS publishes an un-prefixed classification CSV that predates the `sequence_id` column. Revision `0.4` fixes both.
+
+For an experiment pinned to an older revision, rebuild the ground truth from the dataset's `test.256` split instead:
+
+```bash
+python -m ultrabench.evaluate.ground_truth output_dir=<dir>
+```
+
+This writes one `<task>.csv` per task. Pass `tasks='[tn3k_segmentation]'` to build a subset, and `overwrite=true` to rebuild files that already exist. The ground truth is shared by every model, so build it once and point each evaluation at it. This command is retired once every task is pinned to `0.4` or later.
 
 ## Prediction CSVs
 
@@ -85,4 +99,13 @@ The training layer reports the same metric inline. Set `sequence_by` in the task
 | Task | Metrics |
 | ---- | ------- |
 | Classification | Balanced accuracy. |
-| Segmentation | Macro Dice over the foreground classes, and the mean Dice of each class. |
+| Segmentation | Positive Dice over the foreground classes, and the mean Dice of each class. |
+
+### The positive Dice convention
+
+The positive Dice score excludes the background class, and follows two further conventions. Both match `torchmetrics.segmentation.DiceScore(include_background=False)`, which the training layer uses for the `positive_dice` column of `test_metrics.csv`, so the evaluator reproduces that column exactly.
+
+- A class that is empty in both the ground truth and the prediction is undefined, and drops out of the score. Scoring it 1.0 instead rewards a model for predicting nothing on an image the class is absent from, which inflates the score on tasks where many images hold no instance of a class. An image whose every foreground class is undefined drops out of the score entirely.
+- The score averages the defined foreground classes of an image first, and the images second. Averaging per class first gives a different number, since the undefined pairs leave the per-class groups unequal in size.
+
+The undefined pairs are still written to `per_image_metrics.csv`, with an empty `dice` field.
