@@ -32,17 +32,14 @@ Score your predictions against the split you predicted on. A segmentation CSV en
 | `class_id` | Segmentation | The foreground class index. Background (0) is omitted. |
 | `encoded_pixels` | Segmentation | The run-length encoded binary mask for that class, or an empty string. |
 
-### Revisions before 0.4
+### Downloading the ground truth
 
-Do not use the ground truth published with revisions `0.1` to `0.3`. Two defects make those files unusable: the segmentation CSVs encode full-resolution masks despite their `test.256` name, and CAMUS publishes an un-prefixed classification CSV that predates the `sequence_id` column. Revision `0.4` fixes both.
-
-For an experiment pinned to an older revision, rebuild the ground truth from the dataset's `test.256` split instead:
+Download the CSV of the split you predicted on, pinning the revision the task configuration pins:
 
 ```bash
-python -m ultrabench.evaluate.ground_truth output_dir=<dir>
+hf download UltraBench/TN3K test.256-ground-truth-segmentation.csv \
+  --repo-type dataset --revision 0.4 --local-dir ground_truth
 ```
-
-This writes one `<task>.csv` per task. Pass `tasks='[tn3k_segmentation]'` to build a subset, and `overwrite=true` to rebuild files that already exist. The ground truth is shared by every model, so build it once and point each evaluation at it. This command is retired once every task is pinned to `0.4` or later.
 
 ## Prediction CSVs
 
