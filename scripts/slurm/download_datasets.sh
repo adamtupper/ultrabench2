@@ -32,7 +32,6 @@ python scripts/slurm/download_dataset.py --name UltraBench/STMUS --revision 0.3 
 python scripts/slurm/download_dataset.py --name UltraBench/TN3K --revision 0.2 --cache_dir $project/data/hf/datasets
 
 # Deprecated datasets:
-# python scripts/slurm/download_dataset.py --name UltraBench/POCUS --revision 0.1 --cache_dir $project/data/hf/datasets
 # python scripts/slurm/download_dataset.py --name UltraBench/StanfordThyroid --revision 0.1 --cache_dir $project/data/hf/datasets
 
 

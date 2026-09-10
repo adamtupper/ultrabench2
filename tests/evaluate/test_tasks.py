@@ -58,7 +58,7 @@ NOTEBOOK_CATEGORIES = {
 
 def test_registry_covers_every_task_config():
     """Check that every training task config is registered."""
-    assert len(TASKS) == 23
+    assert len(TASKS) == 22
     assert all(spec.name == name for name, spec in TASKS.items())
 
 

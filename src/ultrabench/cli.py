@@ -9,7 +9,6 @@ from .download import (
     download_covid_blues,
     download_fetal_planes,
     download_masld,
-    download_pocus,
     download_psfhs,
     download_stmus,
 )
@@ -23,7 +22,6 @@ from .process import (
     process_masld,
     process_mmotu,
     process_open_kidney,
-    process_pocus,
     process_psfhs,
     process_stanford_thyroid,
     process_stmus,
@@ -54,7 +52,6 @@ _DOWNLOADABLE = [
     ("covid-blues", download_covid_blues),
     ("fetal-planes", download_fetal_planes),
     ("masld", download_masld),
-    ("pocus", download_pocus),
     ("psfhs", download_psfhs),
     ("stmus", download_stmus),
 ]
@@ -71,7 +68,6 @@ _ALL = [
     ("gbcu", process_gbcu),
     ("mmotu", process_mmotu),
     ("open-kidney", process_open_kidney),
-    ("pocus", process_pocus),
     ("psfhs", process_psfhs),
     ("stanford-thyroid", process_stanford_thyroid),
     ("stmus", process_stmus),

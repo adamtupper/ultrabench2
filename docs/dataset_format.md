@@ -17,7 +17,6 @@ Downloadable datasets:
 | AUL | `ultrabench download aul <output_dir>` |
 | CAMUS | `ultrabench download camus <output_dir>` |
 | MASLD | `ultrabench download masld <output_dir>` |
-| POCUS | `ultrabench download pocus <output_dir>` |
 | PSFHS | `ultrabench download psfhs <output_dir>` |
 
 For datasets not listed above, refer to their respective sources and download them manually before running the preprocessing step.
@@ -35,7 +34,7 @@ ultrabench process <dataset> <raw_dir> <output_dir> [--size 256] [--publish]
 - `--size`: Target height and width (in pixels) for test images (default: `256`).
 - `--publish`: Push the processed dataset to the Hugging Face Hub.
 
-All 9 datasets are supported:
+All 8 datasets are supported:
 
 | Dataset | Command |
 |---------|---------|
@@ -45,7 +44,6 @@ All 9 datasets are supported:
 | GBCU | `ultrabench process gbcu <raw_dir> <output_dir>` |
 | MMOTU | `ultrabench process mmotu <raw_dir> <output_dir>` |
 | Open Kidney | `ultrabench process open-kidney <raw_dir> <output_dir>` |
-| POCUS | `ultrabench process pocus <raw_dir> <output_dir>` |
 | PSFHS | `ultrabench process psfhs <raw_dir> <output_dir>` |
 | Stanford Thyroid | `ultrabench process stanford-thyroid <raw_dir> <output_dir>` |
 
