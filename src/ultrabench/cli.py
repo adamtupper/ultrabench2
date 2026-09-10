@@ -12,6 +12,7 @@ from .download import (
     download_psfhs,
     download_stmus,
 )
+from .publish import publish_raw
 from .process import (
     process_aul,
     process_busbra,
@@ -43,6 +44,7 @@ process_app = typer.Typer(
 
 app.add_typer(download_app, name="download")
 app.add_typer(process_app, name="process")
+app.command("publish-raw")(publish_raw)
 
 _DOWNLOADABLE = [
     ("aul", download_aul),
