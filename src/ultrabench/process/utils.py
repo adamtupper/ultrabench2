@@ -2,7 +2,8 @@
 
 import csv
 import os
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -12,8 +13,13 @@ from huggingface_hub import CommitOperationAdd, HfApi
 from huggingface_hub.errors import RepositoryNotFoundError
 from tqdm.auto import tqdm
 
+from datasets import DatasetDict
+
 from ultrabench.core.aggregation import format_sequence_id
 from ultrabench.core.rle import mask_to_rle
+
+IMAGE_SIZE = 256
+"""The default height and width of the resized test images."""
 
 MAX_TRAIN_SAMPLES = 1000
 """The maximum number of examples in a published training split."""
@@ -444,3 +450,43 @@ def resize_and_pad(image: np.ndarray, size: int, order: int = 1) -> np.ndarray:
     left = (size - new_w) // 2
     out[top : top + new_h, left : left + new_w] = resized
     return out
+
+
+@dataclass(frozen=True)
+class BuildResult:
+    """A processed dataset and the records its ground truth comes from.
+
+    The ground-truth CSVs are built from the record dicts rather than
+    from the dataset, because the masks have to be run-length encoded
+    from the numpy arrays before the Image feature encodes them to PNG.
+
+    Args:
+        dataset: The processed splits.
+        test_records: The records of the original-resolution test split.
+        test_resized_records: The records of the resized test split.
+    """
+
+    dataset: DatasetDict
+    test_records: list[dict]
+    test_resized_records: list[dict]
+
+
+def write_test_ground_truth(
+    result: BuildResult,
+    output_path: Path,
+    size: int,
+    writer: Callable[[list[dict], Path, int | None], None],
+) -> None:
+    """Write the ground-truth CSVs of both test splits.
+
+    Args:
+        result: The build result holding the test records.
+        output_path: The directory the dataset was saved to.
+        size: The height and width of the resized test images.
+        writer: The dataset's ground-truth writer, called once per test
+            split with the split's records, the split directory and the
+            size its masks are encoded at, or None for the
+            original-resolution split.
+    """
+    writer(result.test_records, output_path / "test", None)
+    writer(result.test_resized_records, output_path / f"test.{size}", size)
