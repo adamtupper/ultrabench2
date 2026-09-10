@@ -31,13 +31,6 @@ PRIMARY_METRICS = {
 SEQUENCE_PREFIX = "seq_"
 """Prefix marking a metric computed over sequences rather than images."""
 
-EXCLUDED_TASKS = frozenset(
-    {
-        "stanford_thyroid_segmentation",
-    }
-)
-"""Tasks that have a config but are not part of the reported benchmark."""
-
 PARADIGM_PATTERN = re.compile(
     r"^(?P<head>.*?)_(?P<paradigm>full_finetuning|head_only)$"
 )
@@ -179,9 +172,9 @@ def included_tasks() -> tuple[str, ...]:
     """List the tasks that are part of the reported benchmark.
 
     Returns:
-        The names of every registered task that is not excluded.
+        The names of every registered task.
     """
-    return tuple(sorted(set(TASKS) - EXCLUDED_TASKS))
+    return tuple(sorted(TASKS))
 
 
 CATEGORIES: dict[str, Category] = {

@@ -43,7 +43,6 @@ The following table contains the list of supported datasets and tasks. Click on 
 | Multi-Modality Ovarian Tumor Ultrasound (MMOTU) ([article](http://arxiv.org/abs/2207.06799), [data](https://github.com/cv516Buaa/MMOTU_DS2Net)) | Ovaries      | Ovarian tumor classifcation      | Ovarian tumor segmentation                  |
 | Open Kidney Ultrasound ([article](https://link.springer.com/chapter/10.1007/978-3-031-44521-7_15), [data](https://rsingla.ca/kidneyUS/))                          | Kidney       |                                  | Kidney capsule segmentation                 |
 | PSFHS ([article](https://www.nature.com/articles/s41597-024-03266-4), [data](https://zenodo.org/records/10969427))                                           | Fetus        |                                  | Fetal head and pubic symphysis segmentation |
-| Stanford Thyroid ([data](https://stanfordaimi.azurewebsites.net/datasets/a72f2b02-7b53-4c5d-963c-d7253220bfd5))                             | Thyroid      |                                  | Thyroid nodule segmentation                 |
 
 ## Contributing
 

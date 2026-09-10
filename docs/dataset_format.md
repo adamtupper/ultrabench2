@@ -34,7 +34,7 @@ ultrabench process <dataset> <raw_dir> <output_dir> [--size 256] [--publish]
 - `--size`: Target height and width (in pixels) for test images (default: `256`).
 - `--publish`: Push the processed dataset to the Hugging Face Hub.
 
-All 8 datasets are supported:
+All 7 datasets are supported:
 
 | Dataset | Command |
 |---------|---------|
@@ -45,7 +45,6 @@ All 8 datasets are supported:
 | MMOTU | `ultrabench process mmotu <raw_dir> <output_dir>` |
 | Open Kidney | `ultrabench process open-kidney <raw_dir> <output_dir>` |
 | PSFHS | `ultrabench process psfhs <raw_dir> <output_dir>` |
-| Stanford Thyroid | `ultrabench process stanford-thyroid <raw_dir> <output_dir>` |
 
 ## Training Split Size
 

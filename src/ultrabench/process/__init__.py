@@ -9,6 +9,5 @@ from .masld import process_masld
 from .mmotu import process_mmotu
 from .open_kidney import process_open_kidney
 from .psfhs import process_psfhs
-from .stanford_thyroid import process_stanford_thyroid
 from .stmus import process_stmus
 from .tn3k import process_tn3k

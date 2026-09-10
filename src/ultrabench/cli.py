@@ -23,7 +23,6 @@ from .process import (
     process_mmotu,
     process_open_kidney,
     process_psfhs,
-    process_stanford_thyroid,
     process_stmus,
     process_tn3k,
 )
@@ -69,7 +68,6 @@ _ALL = [
     ("mmotu", process_mmotu),
     ("open-kidney", process_open_kidney),
     ("psfhs", process_psfhs),
-    ("stanford-thyroid", process_stanford_thyroid),
     ("stmus", process_stmus),
     ("tn3k", process_tn3k),
 ]
