@@ -67,8 +67,8 @@ Add a model to the leaderboard by opening a pull request against `main`. A maint
 Produce the scores with the evaluation layer, following [the evaluation protocol](docs/evaluation_protocol.md):
 
 1. Train the model on every task of the benchmark under the full fine-tuning paradigm, with five seeds per task. A category score covers all of the tasks in that category, so a missing task leaves the category unscored.
-2. Write the test split predictions of each run to a prediction CSV and score them against the published ground truth. See [the evaluation documentation](docs/evaluation.md) for the CSV format and the commands.
-3. Average each task's metric over the five runs, then take the unweighted mean of the tasks in each category.
+2. Write the test split predictions of each run to a prediction CSV, and lay the CSVs out as one directory per task. See [the evaluation documentation](docs/evaluation.md) for the format.
+3. Score the submission with `python -m ultrabench2.evaluate.protocol predictions=<your directory>`. It writes the per-task and per-category scores with their error bars, and prints the leaderboard row to paste into the table.
 
 Your pull request adds one row to the [leaderboard](#leaderboard) table:
 
