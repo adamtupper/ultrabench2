@@ -4,11 +4,6 @@ from functools import partial
 import torch
 import torchvision.transforms.v2 as tv_transforms
 
-# import sys
-# sys.path.append('/raid/aradhachandran/thyroid/code/foundation_model/downstreams/SAMUS/models/segment_anything_samus/')
-# from modeling import ImageEncoderViT
-# sys.path.append('/raid/aradhachandran/thyroid/code/foundation_model/downstreams/SAMUS/utils/')
-# from data_us import JointTransform2D
 from ultrabench2.models.samus.samus_image_encoder_vit import ImageEncoderViT
 
 
