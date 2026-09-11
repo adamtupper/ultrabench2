@@ -1,6 +1,6 @@
 # Dataset Format
 
-UltraBench provides a standardized preprocessing pipeline that converts raw ultrasound datasets into a consistent directory structure.
+UltraBench 2 provides a standardized preprocessing pipeline that converts raw ultrasound datasets into a consistent directory structure.
 
 ## Loading Datasets
 
@@ -141,7 +141,7 @@ Datasets over the cap are reduced in one of three ways:
 | Rule | Datasets | Behaviour |
 |------|----------|-----------|
 | Move whole patients to `test` | BUS-BRA, FetalPlanes, STMUS | Patients are kept whole and moved from `train` into `test` until the cap is met, so the `test` split grows and no patient appears in both splits. |
-| Move images to `test` | PSFHS | Images are moved individually, because the dataset publishes no patient identifiers and UltraBench defines its split itself. |
+| Move images to `test` | PSFHS | Images are moved individually, because the dataset publishes no patient identifiers and UltraBench 2 defines its split itself. |
 | Discard the surplus | CAMUS, GBCU, TN3K | The surplus examples are dropped and the `test` split is unchanged. This applies where the original `test` split is patient-disjoint but no patient identifiers are published (GBCU, TN3K), and where frames are subsampled within each sequence to preserve patient diversity (CAMUS). |
 
 Where examples are discarded from a labelled dataset, they are taken from the largest classes first, which makes the class distribution more uniform and keeps the rarer (often more clinically important) classes intact.
