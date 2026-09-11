@@ -1,6 +1,6 @@
 # UltraBench 2
 
-UltraBench 2 is a standardized benchmark of 21 convex ultrasound image classification and semantic segmentation tasks drawn from 12 publicly available datasets covering 10 regions of the body. This repository contains the datasets, the downstream training framework, and the evaluation layer used to train and score machine learning models on them.
+UltraBench 2 is a standardized benchmark of 21 convex ultrasound image classification and semantic segmentation tasks drawn from 12 publicly available datasets covering 10 anatomical regions. This repository contains the datasets, the downstream training framework, and the evaluation layer used to train and score machine learning models on them.
 
 ## Installation
 
@@ -12,8 +12,6 @@ source .venv/bin/activate
 nbstripout --install
 pre-commit install
 ```
-
-See [Contributing](#contributing) for instructions on setting up a development environment.
 
 ## Getting Started
 
