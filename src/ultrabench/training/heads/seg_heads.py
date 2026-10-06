@@ -1,3 +1,4 @@
+# fmt: off
 import math
 from typing import List, Optional
 
@@ -234,7 +235,7 @@ class SimpleUpsamplerHead(nn.Module):
 #   'setr_mla'   → isotropic ViTs only; taps intermediate blocks via forward hooks
 #   'segformer'  → hierarchical multi-scale encoders only (e.g. EchoCare)
 DECODER_COMPATIBILITY = {
-    "upsampler": {"patch_tokens", "spatial_map"},
+    "upsampler": {"patch_tokens", "spatial_map", "multi_scale"},
     "setr_mla": {"patch_tokens"},
     "segformer": {"multi_scale"},
 }
