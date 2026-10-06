@@ -22,7 +22,7 @@ set -e
 
 EXPERIMENT="segmentation_dinov3_convnext_large"
 
-SEEDS=(45 46)
+SEEDS=(42 43 44 45 46)
 METHODS=(head_only full_finetuning)
 TASKS=(
     aul_liver_segmentation
@@ -47,7 +47,7 @@ for seed in "${SEEDS[@]}"; do
 done
 
 MODEL="dinov3_convnext_large"
-HEAD="segformer"
+HEAD="upsampler"
 BATCH_SIZE=16
 ACCUM_GRAD=2
 

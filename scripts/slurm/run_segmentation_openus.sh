@@ -22,7 +22,7 @@ set -e
 
 EXPERIMENT="segmentation_openus"
 
-SEEDS=(45 46)
+SEEDS=(42 43 44 45 46)
 METHODS=(head_only full_finetuning)
 TASKS=(
     aul_liver_segmentation
@@ -48,7 +48,7 @@ done
 
 MODEL="openus"
 KERNEL_PATH="$project/hf-kernels/kernels--kernels-community--mamba-ssm/snapshots/a39ff24c08103278583f168091409653ada4c292/build/torch210-cxx11-cu126-x86_64-linux"
-HEAD="segformer"
+HEAD="upsampler"
 BATCH_SIZE=16
 ACCUM_GRAD=2
 
