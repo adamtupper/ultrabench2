@@ -22,7 +22,8 @@ set -e
 
 EXPERIMENT="segmentation_dinov3_convnext_large"
 
-SEEDS=(45 46)
+LRS=(0.01 0.0001)
+SEEDS=(42 43 44 45 46)
 METHODS=(head_only full_finetuning)
 TASKS=(
     aul_liver_segmentation
@@ -41,7 +42,9 @@ declare -a COMBOS
 for seed in "${SEEDS[@]}"; do
     for method in "${METHODS[@]}"; do
         for task in "${TASKS[@]}"; do
-            COMBOS+=("$seed $method $task")
+            for lr in "${LRS[@]}"; do
+                COMBOS+=("$seed $method $task $lr")
+            done
         done
     done
 done
@@ -54,7 +57,7 @@ ACCUM_GRAD=2
 # Run a single combo. $1 is the run directory reserved for this attempt, the
 # remaining arguments are the fields of the combo.
 ub_run_one() {
-    local run_dir="$1" seed="$2" method="$3" task="$4"
+    local run_dir="$1" seed="$2" method="$3" task="$4" lr="$5"
 
     python ultrabench2/src/ultrabench/training/main_launch.py \
         system.output_dir=${OUTPUT_DIR} \
@@ -67,6 +70,7 @@ ub_run_one() {
         head=${HEAD} \
         task=${task} \
         mode=${method} \
+        mode.optimizer.lr=${lr} \
         optimization.seed=${seed} \
         optimization.batch_size=${BATCH_SIZE} \
         optimization.accum_grad=${ACCUM_GRAD}
