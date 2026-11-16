@@ -1,6 +1,7 @@
-# UltraBench 2
+# UltraBench 2: Towards Robust Evaluation of Vision Foundation Models on Ultrasound
 
-UltraBench 2 is a standardized benchmark of 21 convex ultrasound image classification and semantic segmentation tasks drawn from 12 publicly available datasets covering 10 anatomical regions. This repository contains the datasets, the downstream training framework, and the evaluation layer used to train and score machine learning models on them.
+> [!WARNING]
+> This repository contains the code for the experiments performed for [UltraBench 2: Towards Robust Evaluation of Vision Foundation Models on Ultrasound](https://arxiv.org/abs/2609.28610). For the up-to-date UltraBench leaderboard and package visit [adamtupper/ultrabench]([adamtupper/ultrabench](https://github.com/adamtupper/ultrabench)).
 
 ## Installation
 
